@@ -58,7 +58,7 @@ def main():
     env_name = 'MyGridNaviCoords-v1'
     env = gym.make(env_name, seed=0)
     env.reset_task(np.array([4, 4]))
-    pi = defaultdict(lambda : np.ones(5) / 5)  # random policy
+    pi = defaultdict(lambda: np.ones(5) / 5)  # random policy
 
     S = env.reset()
     done = False
@@ -91,7 +91,7 @@ def main():
     plt.plot(np.array(states_visited)[:, 0], np.array(states_visited)[:, 1], alpha=0.5, lw=0, marker='.', mew=0, markersize=3)
     plt.xlim(0, 1)
     plt.ylim(0, 1)
-    plt.savefig(f'{args.output_dir}/{env_name}-state_visitation.pdf')
+    plt.savefig(f'{args.output_dir}/{env_name}-state_visitation.png')
 
 if __name__ == "__main__":
     main()

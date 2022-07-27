@@ -13,16 +13,15 @@ setuptools.setup(
     include_package_data=True,
     packages=['offsim4rl', 'azureml_connector'],
     install_requires=[
-        "azureml-sdk",
         "azureml-core",
         "azureml-sdk",
-        "torch",
-        "matplotlib",
-        "tqdm",
-        "stable-baselines3",
-        "gym",
+        "gym==0.21.0",
+        "h5py",
         "joblib",
+        "matplotlib",
         "seaborn",
-        "h5py"
+        "stable-baselines3",
+        "torch",
+        "tqdm"
     ],
 )

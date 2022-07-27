@@ -11,7 +11,7 @@ def create_env(ws, env_name, requirements_file_path, version=None):
     env = Environment(name=env_name)
     env.docker.base_image = 'mcr.microsoft.com/azureml/openmpi4.1.0-cuda11.2-cudnn8-ubuntu20.04'
     conda_dependencies = CondaDependencies()
-    conda_dependencies.set_python_version('3.10')
+    conda_dependencies.set_python_version('3.7')
     conda_dependencies.add_channel('pytorch')
     conda_dependencies.add_channel('conda-forge')
     conda_dependencies.add_conda_package('pytorch=1.7.1')

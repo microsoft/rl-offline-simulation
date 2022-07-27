@@ -1,9 +1,10 @@
+azureml-core
 azureml-sdk
-torch
-matplotlib
-tqdm
-stable-baselines3
-gym
-joblib
-seaborn
+gym==0.21.0
 h5py
+joblib
+matplotlib
+seaborn
+stable-baselines3
+torch
+tqdm

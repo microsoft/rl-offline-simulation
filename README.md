@@ -4,7 +4,7 @@ This repo intends to track several tools and experiments for the Offline Simulat
 
 ## Getting Started
 ```console
-conda create -n offsim4rl pip python=3.10
+conda create -n offsim4rl pip=21.2.4 python=3.7
 conda activate offsim4rl
 conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch conda-forge defaults
 pip install -e .
