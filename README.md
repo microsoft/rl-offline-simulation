@@ -1,14 +1,19 @@
-# Project
+# Project OffSim4RL
 
-> This repo has been populated by an initial template to help get you started. Please
-> make sure to update the content to build a great experience for community-building.
+This repo intends to track several tools and experiments for the Offline Simulation for Reinforcement Learning paper.
 
-As the maintainer of this project, please make a few updates:
+## Getting Started
+```console
+conda create -n offsim4rl pip python=3.10
+conda activate offsim4rl
+conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch conda-forge defaults
+pip install -e .
+```
 
-- Improving this README.MD file to provide a great experience
-- Updating SUPPORT.MD with content about this project's support experience
-- Understanding the security reporting process in SECURITY.MD
-- Remove this section from the README
+## Workflow
+- Collect data using OpenAI spinning up
+- Train HOMER
+- Run offline simulation with learners
 
 ## Contributing
 

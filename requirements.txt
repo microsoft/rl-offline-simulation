@@ -1,0 +1,9 @@
+azureml-sdk
+torch
+matplotlib
+tqdm
+stable-baselines3
+gym
+joblib
+seaborn
+h5py
