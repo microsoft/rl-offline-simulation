@@ -51,7 +51,8 @@ class MyGridNavi(gym.Env):
 
     def reset_task(self, task=None):
         if task is None:
-            self._goal = np.array(np.random.choice(self.possible_goals))
+            rng = np.random.default_rng()
+            self._goal = np.array(rng.choice(self.possible_goals))
         else:
             self._goal = np.array(task)
         return self._goal
