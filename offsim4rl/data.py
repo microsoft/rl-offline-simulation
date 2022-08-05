@@ -1,32 +1,45 @@
 import abc
-import collections.abc
-from typing import Iterator, Dict, Union
+from typing import Dict, Union
 import gym
 import numpy as np
 import enum
 
 import numpy as np
-from tqdm import tqdm
 import h5py
 
 from offsim4rl.core import ActionSamplingEnv
 
 class ProbDistribution(enum.Enum):
-    
+    """ Type of probability distribution used describe action. """
+
     """ No probabilities are provided. """
     NoProbability = 0
 
     """ Only probability of the logged action (single float). """
-    # TODO: is this needed?
+    # TODO: do we need this?
     LoggedActionOnly = 1
 
     """ Probability Mass Function, mapping each discrete action to a probability (a vector of floats). """
     Discrete = 2
 
-    # TODO: Normal, Multivariate, etc.
+    """ torch.distributions.Distribution object (provides most flexibility). """
+    TorchDistribution = 3
 
 
-class OfflineDataset(collections.abc.Iterable):
+# TODO: consider if we should inherit this from collections.abc.Iterable
+#  and add a method like:
+# @abc.abstractmethod
+# def __iter__(self) -> Iterator[Dict[str, Union[np.ndarray, dict]]]:
+#     # Note: singular form since we're iterating example by example.
+#     yield {
+#         "observation": ...,
+#         "action": ...,
+#         "action_dist": ...,
+#         "reward": ...,
+#         "terminal": ...,
+#         "info": ...
+#     }
+class OfflineDataset:
     @abc.abstractproperty
     def observation_space(self) -> gym.Space:
         pass
@@ -35,55 +48,17 @@ class OfflineDataset(collections.abc.Iterable):
     def action_space(self) -> gym.Space:
         pass
 
-    def contains_action_dist(self) -> bool:
-        return self.action_dist_type() > ProbDistribution.LoggedActionOnly
-
     @abc.abstractproperty
     def action_dist_type(self) -> ProbDistribution:
         pass
 
-    @abc.abstractmethod
-    def __iter__(self) -> Iterator[Dict[str, Union[np.ndarray, dict]]]:
-        # Note: singular form since we're iterating example by example.
-        yield {
-            "observation": ...,
-            "action": ...,
-            "action_dist": ...,
-            "reward": ...,
-            "terminal": ...,
-            "info": ...
-        }
+    @abc.abstractproperty
+    def num_examples(self) -> int:
+        pass
 
-class InMemoryDataset(OfflineDataset):
-    def __init__(self, observations: np.ndarray, actions: np.ndarray, rewards: np.ndarray, terminals: np.ndarray, infos: list):
-        self.observations = observations
-        self.actions = actions
-        self.rewards = rewards
-        self.terminals = terminals
-        self.infos = infos
-
-    @property
-    def observation_space(self) -> gym.Space:
-        return gym.spaces.Box(low=0, high=1, shape=self.observations.shape[1:])
-
-    @property
-    def action_space(self) -> gym.Space:
-        return gym.spaces.Discrete(self.actions.shape[1])
-
-    @property
-    def action_dist_type(self) -> ProbDistribution:
-        return ProbDistribution.Discrete
-
-    def __iter__(self) -> Iterator[Dict[str, Union[np.ndarray, dict]]]:
-        for i in range(self.observations.shape[0]):
-            yield {
-                "observation": self.observations[i],
-                "action": self.actions[i],
-                "action_dist": self.actions[i],
-                "reward": self.rewards[i],
-                "terminal": self.terminals[i],
-                "info": self.infos[i]
-            }
+    @abc.abstractproperty
+    def experience(self) -> Dict[str, Union[np.ndarray, dict]]:
+        pass
 
 
 class EnvironmentRecorder(ActionSamplingEnv):
@@ -95,12 +70,13 @@ class EnvironmentRecorder(ActionSamplingEnv):
         self._obs = self._env.reset()
         return self._obs
     
-    def step(self, action_dist):
+    def step_dist(self, action_dist):
         _obs = self._obs
-        action, next_obs, reward, done, info = super().step(action_dist)
+        next_obs, reward, done, info = super().step_dist(action_dist)
+        action = info['action']
         self.append_buffer((_obs, action, reward, next_obs, done, action_dist, info))
         self._obs = next_obs
-        return action, next_obs, reward, done, info
+        return next_obs, reward, done, info
     
     def reset_buffer(self):
         self._buffer = {
@@ -133,7 +109,9 @@ class EnvironmentRecorder(ActionSamplingEnv):
         return buffer_np
     
     def save(self, save_path):
-        dataset = h5py.File(save_path, 'w')
+        # TODO: right now we buffer experience in memory and then save everything at once.
+        #   We should use h5py's resize functionality to append smaller buffers.
+        file = h5py.File(save_path, 'w')
         buffer_np = self.npify(self._buffer)
         for k in buffer_np:
-            dataset.create_dataset(k, data=buffer_np[k], compression='gzip')
+            file.create_dataset(k, data=buffer_np[k], compression='gzip')

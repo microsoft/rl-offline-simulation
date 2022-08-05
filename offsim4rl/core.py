@@ -34,6 +34,7 @@ class ActionSamplingEnv(RevealedRandomnessEnv):
     def step_dist(self, action_dist):
         action = action_dist.sample()
         next_obs, reward, done, info = self._env.step(action.numpy())
+        assert 'action' not in info, f'Wrapper environment already contains action in the info object - do you want to override it?'
         info['action'] = action
         return next_obs, reward, done, info
 
