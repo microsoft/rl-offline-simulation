@@ -19,6 +19,13 @@ At the time of writing this README, the APIs are not ready yet - the snippets be
 
 The same object exposes methods to fit to data as well as environment APIs:
 
+TODO:
+ * Lazy (paged) dataset loading
+ * Representing distributions
+ * simulator ~= offline environment
+     - not evaluator
+    
+
 ```python
 import offsim4rl
 
@@ -31,7 +38,12 @@ simulator.fit(dataset)
 
 # The QueueBased simulator exposes standard OpenAI gym interface
 simulator.reset()
+
+# You can call either:
 simulator.step(action_space.sample())
+# or:
+simulator.step_dist(...action dist...)
+
 ```
 
 Another example:
@@ -95,6 +107,10 @@ logger_kwargs = dict(output_dir='cartpole', exp_name='cartpole_ppo_learner')
 
 ppo(env_fn=env_fn, ac_kwargs=ac_kwargs, steps_per_epoch=500, epochs=100, logger_kwargs=logger_kwargs)
 ```
+
+## Name ideas
+ * OffSim4RL
+ * DDE - Data-Driven Environments
 
 ## Workflow
 - Collect data using OpenAI spinning up

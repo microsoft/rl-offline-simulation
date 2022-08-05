@@ -1,0 +1,2 @@
+azureml-core>=1.24.2
+azureml-sdk>=1.43.0

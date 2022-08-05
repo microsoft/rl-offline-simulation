@@ -1,5 +1,3 @@
-azureml-core
-azureml-sdk
 gym==0.21.0
 h5py
 joblib

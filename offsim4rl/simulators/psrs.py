@@ -1,7 +1,9 @@
 import numpy as np
 import copy, itertools
 
-class PSRS(object):
+from offsim4rl.core import RevealedRandomnessEnv
+
+class PerStateRejectionSampling(RevealedRandomnessEnv):
     # Rejection sampler that acts as an environment
     def __init__(self, buffer, nS=25, nA=5, latent_state_func=lambda s: s):
         self.raw_buffer = copy.deepcopy(buffer) # (s, a, r, s', done, p), where p is the logging policy's probability
@@ -31,7 +33,12 @@ class PSRS(object):
         self.s = 0 # assume known starting state
         return self.s
     
-    def step(self, p_new):
+    def step(self, action):
+        raise NotImplementedError(
+            'PerStateRejectionSampling requires the agent to reveal its randomness via the step_dist method. '
+            + 'Modify your agent or use the QueueBased simulator instead.')
+
+    def step_dist(self, p_new):
         s = self.s
         reject = True
         while reject:
