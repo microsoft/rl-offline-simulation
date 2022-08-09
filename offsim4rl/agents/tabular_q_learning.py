@@ -31,6 +31,43 @@ def epsilon_greedy_policy(Q, args):
         pi[s, a] = 1 - epsilon + epsilon / (Q.shape[1])
     return pi
 
+def rollout(
+    env, n_episodes, pi, gamma,
+    memory=None, show_tqdm=True, seed=None,
+):
+    rng = np.random.default_rng(seed=seed)
+    if memory is not None:
+        raise NotImplementedError
+    
+    Gs = []
+    memory_buffer = []
+    
+    for episode in tqdm(range(n_episodes), disable=(not show_tqdm)):
+        G = 0
+        t = 0
+        np.random.seed(episode)
+        env.seed(episode)
+        S = env.reset(seed=episode)
+        done = False
+        while not done: # S is not a terminal state
+            try:
+                p = pi[S]
+            except:
+                p = pi.get(tuple(S))
+            A = rng.choice(env.nA, p=p)
+            S_, R, done, info = env.step(A)
+            memory_buffer.append((S, A, R, S_, done, p, {**info, 't': t}))
+            
+            S = S_
+            G = G + (gamma ** t) * R
+            t = t + 1
+        Gs.append(G)
+    
+    return {
+        'Gs': np.array(Gs), # cumulative reward for each episode
+        'memory': memory_buffer, # all trajectories/experience, tuples of (s,a,r,s', done)
+    }
+
 def qlearn(
     env, n_episodes, behavior_policy, gamma, alpha=0.1, epsilon=1.0, 
     Q_init=None, memory=None, save_Q=0, show_tqdm=True, seed=None,
@@ -76,13 +113,13 @@ def qlearn(
         t = 0
         np.random.seed(episode)
         env.seed(episode)
-        S = env.reset()
+        S = env.reset(seed=episode)
         done = False
         while not done: # S is not a terminal state
             p = behavior_policy(Q[[S],:], dict(epsilon=epsilon_func(episode)))[0]
             A = rng.choice(env.nA, p=p)
             S_, R, done, info = env.step(A)
-            memory_buffer.append((S, A, R, S_, done, p, info))
+            memory_buffer.append((S, A, R, S_, done, p, {**info, 't': t}))
             TD_errors.append(R + gamma * Q[S_].max() - Q[S,A])
             
             # Perform update
@@ -128,13 +165,13 @@ def expSARSA(
         t = 0
         np.random.seed(episode)
         env.seed(episode)
-        S = env.reset()
+        S = env.reset(seed=episode)
         done = False
         while not done: # S is not a terminal state
             p = pi[S]
             A = rng.choice(env.nA, p=p)
             S_, R, done, info = env.step(A)
-            memory_buffer.append((S, A, R, S_, done, p, info))
+            memory_buffer.append((S, A, R, S_, done, p, {**info, 't': t}))
             TD_errors.append(R + gamma * (Q[S_] @ pi[S_]) - Q[S,A])
             
             # Perform update
@@ -180,7 +217,7 @@ def z_expSARSA(
         t = 0
         np.random.seed(episode)
         env.seed(episode)
-        S = env.reset()
+        S = env.reset(seed=episode)
         done = False
         while not done: # S is not a terminal state
             z = latent_state_func(S)
@@ -188,7 +225,7 @@ def z_expSARSA(
             A = rng.choice(env.nA, p=p)
             S_, R, done, info = env.step(A)
             z_ = latent_state_func(S_)
-            memory_buffer.append((S, A, R, S_, done, p, info))
+            memory_buffer.append((S, A, R, S_, done, p, {**info, 't': t}))
             TD_errors.append(R + gamma * Q[z_].max() - Q[z,A])
             
             # Perform update

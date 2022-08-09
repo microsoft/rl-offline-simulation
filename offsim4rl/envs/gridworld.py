@@ -1,12 +1,15 @@
 import itertools
+import math
+import random
 import copy
+from torch.nn import functional as F
 
+import gym
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import numpy as np
-import gym
+import torch
 from gym import spaces
-
 
 class MyGridNavi(gym.Env):
     def __init__(self, num_cells=5, num_steps=15, seed=None, discrete_observation=True):
@@ -51,8 +54,7 @@ class MyGridNavi(gym.Env):
 
     def reset_task(self, task=None):
         if task is None:
-            rng = np.random.default_rng()
-            self._goal = np.array(rng.choice(self.possible_goals))
+            self._goal = np.array(random.choice(self.possible_goals))
         else:
             self._goal = np.array(task)
         return self._goal
@@ -134,7 +136,7 @@ class MyGridNaviNoise(MyGridNavi):
         self.nS = self.num_states * self._random_bits_multiplier
     
     def reset(self, seed=None):
-        self._rng = np.random.default_rng(seed=seed)
+        self._random_bits_rng = np.random.default_rng(seed=seed)
         self._random_bits = self._random_bits_rng.integers(self._random_bits_multiplier)
         return super().reset()
     
@@ -152,15 +154,46 @@ class MyGridNaviNoise(MyGridNavi):
             state = np.concatenate((state, [self._random_bits]))
         return state
 
+
+class MyGridNaviModuloCounter(MyGridNavi):
+    def __init__(self, num_cells=5, num_steps=15, seed=None, counter_limit=1):
+        super().__init__(num_cells=num_cells, num_steps=num_steps, seed=seed)
+        self._discrete_observation = True
+        self._counter = None
+        self._counter_limit = int(counter_limit)
+        self._counter_rng = np.random.default_rng(seed=seed)
+        self.nS = self.num_states * self._counter_limit
+    
+    def reset(self, seed=None):
+        self._counter_rng = np.random.default_rng(seed=seed)
+        self._counter = self._counter_rng.integers(self._counter_limit)
+        return super().reset()
+    
+    def step(self, action):
+        # need to draw random bits before calling superclass step where it calls external state (which uses the bits)
+        self._counter = (self._counter + 1) % self._counter_limit
+        return super().step(action)
+    
+    @property
+    def external_state(self):
+        state = self._env_state.copy()
+        if self._discrete_observation:
+            state = self.coordinate_to_id(state) + self.num_states * self._counter
+        else:
+            state = np.concatenate((state, [self._counter]))
+        return state
+
+
 class MyGridNaviCoords(MyGridNavi):
     def __init__(self, num_cells=5, num_steps=15, seed=None):
         super().__init__(num_cells=num_cells, num_steps=num_steps, seed=seed)
-        self._discrete_observation = True
+        self._discrete_observation = False
         self._rng = np.random.default_rng(seed=seed)
         self._deltas = np.array([0.0, 0.0])
         self.nS = self.num_states
 
     def reset(self, seed=None):
+        self._rng = np.random.default_rng(seed=seed)
         self._deltas = self._rng.uniform(-0.1, 0.1, 2)
         return super().reset()
     
@@ -170,7 +203,6 @@ class MyGridNaviCoords(MyGridNavi):
     
     @property
     def external_state(self):
-        state = self._env_state.copy()
         out = [
             self._env_state[0] / 5 + 0.1 + self._deltas[0],
             self._env_state[1] / 5 + 0.1 + self._deltas[1],

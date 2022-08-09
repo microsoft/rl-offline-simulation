@@ -8,7 +8,7 @@ class PSRS(object):
         self.nS = nS
         self.nA = nA
         self.latent_state_func = latent_state_func
-        self._calculate_latent_state() # (z, s, a, r, s', done, p)
+        self._calculate_latent_state() # self.buffer contains (z, s, a, r, s', done, p)
         self.reset_sampler()
         self.reset()
     
@@ -19,8 +19,11 @@ class PSRS(object):
             self.buffer = [(self.latent_state_func(info), s, a, r, s_, done, p, info) for s, a, r, s_, done, p, info in self.raw_buffer]
     
     def reset_sampler(self, seed=None):
+        self.init_queue = [(elt[0], elt[1]) for elt in self.buffer if elt[-1]['t'] == 0]
+        np.random.default_rng(seed=seed).shuffle(self.init_queue)
+        
         # Construct queues based on the latent state of from-state
-        self.queues = {k:list(v) for k,v in itertools.groupby(sorted(self.buffer, key=lambda elt:elt[0]), key=lambda elt: elt[0])}
+        self.queues = {k:list(v) for k,v in itertools.groupby(sorted(self.buffer, key=lambda elt:elt[0]), key=lambda elt:elt[0])}
         
         # Shuffle queues
         for z in self.queues.keys():
@@ -28,7 +31,10 @@ class PSRS(object):
     
     def reset(self, seed=None):
         self.rejection_sampling_rng = np.random.default_rng(seed=seed)
-        self.s = 0 # assume known starting state
+        if len(self.init_queue) == 0:
+            self.s = None
+            return None
+        _, self.s = self.init_queue.pop(0)
         return self.s
     
     def step(self, p_new):
@@ -46,6 +52,67 @@ class PSRS(object):
                 reject = False
         self.s = s_next
         return s_next, r, done, {'z': z, 'a': a, 'p': p_log}
+
+class PSRS_Exo(object):
+    # Rejection sampler that acts as an environment
+    # o: observation
+    # s: latent state
+    # x: exogenous state
+    def __init__(self, buffer, nO=25, nA=5, o_split_func=lambda o: (o,0), o_combine_func=lambda s,x: s):
+        self.raw_buffer = copy.deepcopy(buffer) # (o, a, r, o', done, p), where p is the logging policy's probability
+        self.nS = self.nO = nO
+        self.nA = nA
+        self.o_split_func = o_split_func
+        self.o_combine_func = o_combine_func
+        self._calculate_latent_state() # self.buffer contains ((s, x), a, r, (s', x'), done, p)
+        self.reset_sampler()
+        self.reset()
+    
+    def _calculate_latent_state(self):
+        self.buffer = [(self.o_split_func(o), a, r, self.o_split_func(o_), *rest) for o, a, r, o_, *rest in self.raw_buffer]
+    
+    def reset_sampler(self, seed=None):
+        self.init_queue = [elt[0] for elt in self.raw_buffer if elt[-1]['t'] == 0]
+        np.random.default_rng(seed=seed).shuffle(self.init_queue)
+        
+        # Construct queues based on the latent state of from-state
+        self.s_queues = {k:[(s, a, r, s_, *rest) for ((s, _), a, r, (s_, _), *rest) in v] 
+                         for k,v in itertools.groupby(sorted(self.buffer, key=lambda elt:elt[0][0]), key=lambda elt:elt[0][0])}
+        self.x_queues = {k:[(x, x_) for ((_, x), _, _, (_, x_), *_) in v] for k,v in itertools.groupby(sorted(self.buffer, key=lambda elt:elt[0][1]), key=lambda elt:elt[0][1])}
+        
+        # Shuffle queues
+        for s in self.s_queues.keys():
+            np.random.default_rng(seed=seed).shuffle(self.s_queues[s])
+        for x in self.x_queues.keys():
+            np.random.default_rng(seed=seed).shuffle(self.x_queues[x])
+    
+    def reset(self, seed=None):
+        self.rejection_sampling_rng = np.random.default_rng(seed=seed)
+        if len(self.init_queue) == 0:
+            self.s = None
+            return None
+        self.o = self.init_queue.pop(0)
+        return self.o
+    
+    def step(self, p_new):
+        o = self.o
+        reject = True
+        while reject:
+            s, x = self.o_split_func(o)
+            if len(self.s_queues[s]) == 0:
+                return None, None, None, None
+            if len(self.x_queues[x]) == 0:
+                return None, None, None, None
+            _s, a, r, s_next, done, p_log, info = self.s_queues[s].pop(0)
+            _x, x_next = self.x_queues[x].pop(0)
+            assert s == _s
+            assert x == _x
+            M = (p_new / p_log).max()
+            u = self.rejection_sampling_rng.random()
+            if u <= p_new[a] / p_log[a] / M:
+                reject = False
+        self.o = self.o_combine_func(s_next, x_next)
+        return self.o, r, done, {'s': s, 'a': a, 'p': p_log}
 
 def qlearn_psrs(
     env, n_episodes, behavior_policy, gamma, alpha=0.1, epsilon=1.0, 
@@ -75,6 +142,9 @@ def qlearn_psrs(
         G = 0
         t = 0
         S = env.reset(seed=episode)
+        if S is None:
+            terminate = True
+            break
         done = False
         while not done: # S is not a terminal state
             p = behavior_policy(Q[[S],:], dict(epsilon=epsilon_func(episode)))[0]
@@ -127,6 +197,9 @@ def expSARSA_psrs(
         G = 0
         t = 0
         S = env.reset(seed=episode)
+        if S is None:
+            terminate = True
+            break
         done = False
         while not done: # S is not a terminal state
             p = pi[S]
@@ -164,6 +237,9 @@ def evalMC_psrs(env, n_episodes, pi, gamma):
         G = 0
         t = 0
         S = env.reset(seed=episode)
+        if S is None:
+            terminate = True
+            break
         done = False
         while not done: # S is not a terminal state
             p = pi[S]
