@@ -67,8 +67,7 @@ class MyGridNavi(gym.Env):
         state = self._env_state.copy()
         if self._discrete_observation:
             state = self.coordinate_to_id(state)
-        else:
-            return state
+        return state
     
     def state_transition(self, action):
         """
