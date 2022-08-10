@@ -87,7 +87,7 @@ class MyGridNavi(gym.Env):
     def step(self, action):
         if isinstance(action, np.ndarray) and action.ndim == 1:
             action = action[0]
-        assert self.action_space.contains(action)
+        assert self.action_space.contains(action), str((self.action_space, action))
 
         done = False or (self._env_state[0] == self._goal[0] and self._env_state[1] == self._goal[1])
 
@@ -115,6 +115,7 @@ class MyGridNavi(gym.Env):
             'task': task, 'task_id': task_id, 
             'z': self.coordinate_to_id(old_state),
             'z_next': self.coordinate_to_id(self._env_state),
+            't': self.step_count-1,
         }
         state = self.external_state
         return state, reward, done, info
