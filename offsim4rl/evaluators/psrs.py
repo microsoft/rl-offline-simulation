@@ -4,7 +4,7 @@ import copy, itertools
 class PSRS(object):
     # Rejection sampler that acts as an environment
     def __init__(self, buffer, nS=25, nA=5, latent_state_func=lambda s: s):
-        self.raw_buffer = copy.deepcopy(buffer) # (s, a, r, s', done, p), where p is the logging policy's probability
+        self.raw_buffer = buffer # (s, a, r, s', done, p), where p is the logging policy's probability
         self.nS = nS
         self.nA = nA
         self.latent_state_func = latent_state_func
