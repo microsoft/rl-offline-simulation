@@ -193,9 +193,10 @@ class MyGridNaviCoords(MyGridNavi):
         self.nS = self.num_states
 
     def reset(self, seed=None):
-        self._rng = np.random.default_rng(seed=seed)
+        if seed is not None:
+            self._rng = np.random.default_rng(seed=seed)
         self._deltas = self._rng.uniform(-0.1, 0.1, 2)
-        return super().reset()
+        return super().reset(seed=seed)
     
     def step(self, action):
         self._deltas = self._rng.uniform(-0.1, 0.1, 2)
