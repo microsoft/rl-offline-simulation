@@ -45,15 +45,15 @@ class EncoderModel(nn.Module):
             nn.LeakyReLU(),
             nn.Linear(hidden_dim, 2)
         )
-
-    def __gen_logits__(self, prev_observations, actions, curr_observations, discretized, type="logsoftmax"):
+    
+    def __gen_logits__(self, prev_observations, actions, curr_observations, discretized, temperature=1.0, type="logsoftmax"):
         prev_encoding = self.obs_encoder(prev_observations)
         curr_encoding = self.obs_encoder(curr_observations)
         action_x = self.action_emb(actions).squeeze()
 
-        prev_z = gumbel_softmax(prev_encoding, hard=discretized)
-        curr_z = gumbel_softmax(curr_encoding, hard=discretized)
-
+        prev_z = gumbel_softmax(prev_encoding, temperature=temperature, hard=discretized)
+        curr_z = gumbel_softmax(curr_encoding, temperature=temperature, hard=discretized)
+        
         x = torch.cat([prev_z, action_x, curr_z], dim=1)
         logits = self.classifier(x)
 
@@ -66,11 +66,11 @@ class EncoderModel(nn.Module):
 
         return result, {}
 
-    def gen_log_prob(self, prev_observations, actions, observations, discretized):
-        return self.__gen_logits__(prev_observations, actions, observations, discretized, type="logsoftmax")
+    def gen_log_prob(self, prev_observations, actions, observations, discretized, temperature=1.0):
+        return self.__gen_logits__(prev_observations, actions, observations, discretized, temperature=temperature, type="logsoftmax")
 
-    def gen_prob(self, prev_observations, actions, observations, discretized):
-        return self.__gen_logits__(prev_observations, actions, observations, discretized, type="softmax")
+    def gen_prob(self, prev_observations, actions, observations, discretized, temperature=1.0):
+        return self.__gen_logits__(prev_observations, actions, observations, discretized, temperature=temperature, type="softmax")
 
     def encode_observations(self, observations):
         if self.config["feature_type"] == 'feature':
