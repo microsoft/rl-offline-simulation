@@ -90,14 +90,8 @@ class EncoderModel(nn.Module):
         for param in parameters:
             param.requires_grad = False
 
-    def save(self, folder_name, model_name=None):
-        if model_name is None:
-            torch.save(self.state_dict(), folder_name + "encoder_model.pt")
-        else:
-            torch.save(self.state_dict(), folder_name + model_name)
+    def save(self, model_path):
+        torch.save(self.state_dict(), model_path)
 
-    def load(self, folder_name, model_name=None):
-        if model_name is None:
-            self.load_state_dict(torch.load(folder_name + "encoder_model.pt"))
-        else:
-            self.load_state_dict(torch.load(folder_name + model_name))
+    def load(self, model_path):
+        self.load_state_dict(torch.load(model_path, map_location=torch.device('cuda' if torch.cuda.is_available() else 'cpu')))

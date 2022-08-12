@@ -8,6 +8,6 @@ def plot_latent_state_color_map(latent_state_dataset, output_path='latent_state.
     fig, ax = plt.subplots(figsize=(4, 4))
     for ix, x in latent_state_dataset:
         plt.plot(x[0], x[1], color=colors[ix], alpha=1, lw=0, marker='.', mew=0, markersize=5)
-    plt.xlim(0,1)
-    plt.ylim(0,1)
+    plt.xlim(0, 1)
+    plt.ylim(0, 1)
     plt.savefig(output_path)
