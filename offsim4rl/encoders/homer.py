@@ -134,15 +134,15 @@ class HOMEREncoder():
             best_model.save(os.path.join(model_dir, model_name))
             self.model.eval()
 
-    def encode(self, observation):
+    def encode(self, observations):
         if not self.model or self.model.training:
             raise ValueError("Model not initialized. Either train a new model for the encoder or load an existing one.")
 
-        assert len(observation.size()) == 1
-        observation = observation.view(1, -1)
-        log_prob = F.log_softmax(self.model.obs_encoder(observation), dim=1)
-        argmax_indices = log_prob.max(1)[1]
-        return int(argmax_indices[0])
+        with torch.no_grad():
+            log_prob = F.log_softmax(self.model.obs_encoder(observations), dim=1)
+            _, argmax_indices = log_prob.max(dim=1)
+
+        return argmax_indices
 
     @staticmethod
     def calc_loss(model, train_batch):
@@ -160,6 +160,9 @@ class HOMEREncoder():
 
 
 if __name__ == "__main__":
+    import numpy as np
+    import pandas as pd
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--latent_size', type=int, default=25)
@@ -171,17 +174,10 @@ if __name__ == "__main__":
     args = parser.parse_args([])
 
     model_dir = f"./trial={datetime.now().isoformat(timespec='minutes').replace('-','').replace(':','')}," + \
-                 f"encoder_model=both,seed={args.seed}," + \
-                 f"dZ={args.latent_size},dH={args.hidden_size},lr={args.lr},weight_decay={args.weight_decay}/"
+                f"encoder_model=both,seed={args.seed}," + \
+                f"dZ={args.latent_size},dH={args.hidden_size},lr={args.lr},weight_decay={args.weight_decay}/"
 
-    buffer = load_h5_dataset(os.path.join(args.output_dir, 'data', 'grid', 'MyGridNaviCoords-v1_random.hdf'))
-    full_dataset = SAS_Dataset(buffer['observations'], buffer['actions'], buffer['next_observations'], )
-    train_dataset, val_dataset = random_split(
-        full_dataset,
-        [len(full_dataset) // 2, len(full_dataset) // 2],
-        generator=torch.Generator().manual_seed(42)
-    )
-
+    # INFERENCE
     homer_encoder = HOMEREncoder(
         latent_size=args.latent_size,
         hidden_size=args.hidden_size,
@@ -189,9 +185,23 @@ if __name__ == "__main__":
         log_dir=os.path.join(args.output_dir, 'logs'),
     )
 
-    output = []
-    for obs, act, next_obs, *_ in val_dataset:
-        i = homer_encoder.encode(obs)
-        output.append((i, next_obs.cpu()))
+    x, y = np.meshgrid(np.arange(0, 1, 0.002), np.arange(0, 1, 0.002))
+    obs = torch.tensor(np.stack([x, y]).reshape((2, -1)).T, device=homer_encoder.device).float()
 
-    plot_latent_state_color_map(output, os.path.join(args.output_dir, 'latent_state.png'))
+    emb = homer_encoder.encode(obs).detach().cpu()
+    df_output = []
+    for i, x in zip(emb, obs):
+        df_output.append((i, *x))
+
+    df_output = pd.DataFrame(df_output, columns=['i', 'x', 'y'])
+
+    plot_latent_state_color_map(df_output, os.path.join(args.output_dir, 'latent_state.png'))
+
+    # TODO: TRAINING
+    # buffer = load_h5_dataset(os.path.join(args.output_dir, 'data', 'grid', 'MyGridNaviCoords-v1_random.hdf'))
+    # full_dataset = SAS_Dataset(buffer['observations'], buffer['actions'], buffer['next_observations'], )
+    # train_dataset, val_dataset = random_split(
+    #     full_dataset,
+    #     [len(full_dataset) // 2, len(full_dataset) // 2],
+    #     generator=torch.Generator().manual_seed(42)
+    # )

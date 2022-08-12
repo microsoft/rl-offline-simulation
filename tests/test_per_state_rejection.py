@@ -1,7 +1,7 @@
 import gym
 import numpy as np
 from offsim4rl.evaluators.per_state_rejection import PerStateRejectionSampling
-from offsim4rl.utils import get_uniform_dist
+from offsim4rl.utils.prob_utils import get_uniform_dist
 from offsim4rl.data import OfflineDataset, ProbDistribution
 
 def test_per_state_rejection_discrete():
