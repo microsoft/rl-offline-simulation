@@ -209,7 +209,6 @@ if __name__ == "__main__":
                 f"encoder_model=both,seed={args.seed}," + \
                 f"dZ={args.latent_size},dH={args.hidden_size},lr={args.lr},weight_decay={args.weight_decay}/"
 
-    # INFERENCE
     homer_encoder = HOMEREncoder(
         latent_size=args.latent_size,
         hidden_size=args.hidden_size,
@@ -228,12 +227,3 @@ if __name__ == "__main__":
     df_output = pd.DataFrame(df_output, columns=['i', 'x', 'y'])
 
     plot_latent_state_color_map(df_output, os.path.join(args.output_dir, 'latent_state.png'))
-
-    # TODO: TRAINING
-    # buffer = load_h5_dataset(os.path.join(args.output_dir, 'data', 'grid', 'MyGridNaviCoords-v1_random.hdf'))
-    # full_dataset = SAS_Dataset(buffer['observations'], buffer['actions'], buffer['next_observations'], )
-    # train_dataset, val_dataset = random_split(
-    #     full_dataset,
-    #     [len(full_dataset) // 2, len(full_dataset) // 2],
-    #     generator=torch.Generator().manual_seed(42)
-    # )

@@ -21,6 +21,7 @@ setuptools.setup(
         "matplotlib",
         "seaborn",
         "stable-baselines3",
+        "tensorboardX",
         "torch",
         "tqdm"
     ],
