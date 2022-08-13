@@ -2,7 +2,7 @@ import argparse
 import os
 from datetime import datetime
 import torch
-from torch.utils.data import Dataset, DataLoader, random_split
+from torch.utils.data import random_split
 
 import random
 import numpy as np
@@ -14,10 +14,8 @@ from offsim4rl.encoders.homer import HOMEREncoder
 from offsim4rl.utils.vis_utils import plot_latent_state_color_map
 
 if __name__ == "__main__":
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
     parser = argparse.ArgumentParser()
-    parser.add_argument('--num_samples', type=int, default=None) # for debugging
+    parser.add_argument('--num_samples', type=int, default=None)  # for debugging
     parser.add_argument('--num_epochs', type=int, default=1000)
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--batch_size', type=int, default=64)
@@ -26,6 +24,7 @@ if __name__ == "__main__":
     parser.add_argument('--lr', type=float, default=1e-3)
     parser.add_argument('--weight_decay', type=float, default=0.0)
     parser.add_argument('--temperature_decay', type=bool, default=False)
+    parser.add_argument('--input_dir', type=str, default='outputs')
     parser.add_argument('--output_dir', type=str, default='outputs')
     args = parser.parse_args()
 
@@ -38,13 +37,13 @@ if __name__ == "__main__":
                 f"dZ={args.latent_size},dH={args.hidden_size},lr={args.lr},weight_decay={args.weight_decay}/"
     os.makedirs(os.path.join(args.output_dir, model_dir, 'vis'), exist_ok=True)
 
-    buffer = load_h5_dataset(os.path.join(args.output_dir, 'MyGridNaviCoords-v1_random.h5'))
+    buffer = load_h5_dataset(os.path.join(args.input_dir, 'MyGridNaviCoords-v1_random.h5'))
     full_dataset = SAS_Dataset(buffer['observations'], buffer['actions'], buffer['next_observations'])
-    
+
     # TRAINING
-    if args.num_samples is not None: # Limit sample size for debugging
+    if args.num_samples is not None:  # Limit sample size for debugging
         full_dataset = torch.utils.data.Subset(full_dataset, range(args.num_samples))
-    
+
     train_dataset, val_dataset = random_split(
         full_dataset,
         [len(full_dataset) // 2, len(full_dataset) // 2],

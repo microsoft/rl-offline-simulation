@@ -80,7 +80,7 @@ class HOMEREncoder():
                     tau = max(TAU_MIN, tau0 * np.exp(-TAU_ANNEAL_RATE*epoch_))
                 else:
                     tau = tau0
-                
+
                 loss, info_dict = loss_fn(self.model, train_batch, tau)
                 optimizer.zero_grad()
                 loss.backward()
