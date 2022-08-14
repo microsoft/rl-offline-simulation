@@ -1,6 +1,8 @@
 import os
 from tensorboardX import SummaryWriter
 
+from azureml_connector import logger
+
 class TensorboardWriter():
     def __init__(self, log_dir):
         save_dir = log_dir + "/"
@@ -18,6 +20,7 @@ class TensorboardWriter():
                 self.index_dict[name] = 1
                 index = 1
         self.writer.add_scalar(name, value, index)
+        logger.log_metric(name, value)
 
     def log_histogram(self, name, value, bins, index=-1):
         if index == -1:

@@ -37,7 +37,7 @@ if __name__ == "__main__":
                 f"dZ={args.latent_size},dH={args.hidden_size},lr={args.lr},weight_decay={args.weight_decay}/"
     os.makedirs(os.path.join(args.output_dir, model_dir, 'vis'), exist_ok=True)
 
-    buffer = load_h5_dataset(os.path.join(args.input_dir, 'MyGridNaviCoords-v1_random.h5'))
+    buffer = load_h5_dataset(os.path.join(args.input_dir, 'MyGridNaviCoords-v1_random.hdf'))
     full_dataset = SAS_Dataset(buffer['observations'], buffer['actions'], buffer['next_observations'])
 
     # TRAINING

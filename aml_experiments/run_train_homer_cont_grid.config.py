@@ -31,7 +31,7 @@ script_run_config = ScriptRunConfig(
     command=[
         installation_cmds + "python", "./examples/continuous_grid/train_homer_encoder.py",
         "--input_dir", input_ref,
-        "--output_dir", "./outputs",
+        "--output_dir", "./logs",
         "--num_epochs", "1000",
         "--seed", "0",
         "--batch_size", "64",
