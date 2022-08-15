@@ -9,8 +9,8 @@ from collections import namedtuple
 import numpy as np
 import h5py
 import pickle
-
-from offsim4rl.core import RevealedRandomnessEnv
+from torch.utils.data import Dataset
+import torch
 
 class ProbDistribution(enum.Enum):
     """ Type of probability distribution used describe action. """
@@ -80,7 +80,7 @@ class OfflineDataset:
     @classmethod
     def load_hdf5(cls, path, group_name=None):
         return HDF5Dataset(path, group_name)
-    
+
     def save_hdf5(self, path, group_name=None):
         with h5py.File(path, "w") as fout:
             group = fout.create_group(group_name) if group_name else fout
@@ -91,7 +91,7 @@ class OfflineDataset:
 
             for k in self.experience:
                 group.create_dataset(k, data=self.experience[k], compression='gzip')
-    
+
     @staticmethod
     def _serialize_attr(group, attr_name, attr_value):
         group.attrs.create(attr_name, np.void(pickle.dumps(attr_value)))
@@ -137,7 +137,7 @@ class HDF5Dataset(OfflineDataset):
 
     def __del__(self):
         self.close()
-    
+
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
 
@@ -145,3 +145,21 @@ class HDF5Dataset(OfflineDataset):
     def _deserialize_attr(group, attr_name, default=None):
         bytes_str = group.attrs.get(attr_name, default=None)
         return pickle.loads(bytes_str.tobytes()) if bytes_str is not None else default
+
+
+class SAS_Dataset(Dataset):
+    def __init__(self, x, a, x_next):
+        self.x = np.array(x)
+        self.a = np.array(a)
+        self.x_next = np.array(x_next)
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    def __getitem__(self, index):
+        return (
+            torch.tensor(self.x[index], device=self.device).float(),
+            torch.tensor(self.a[index], device=self.device).long(),
+            torch.tensor(self.x_next[index], device=self.device).float(),
+        )
+
+    def __len__(self):
+        return len(self.x)
