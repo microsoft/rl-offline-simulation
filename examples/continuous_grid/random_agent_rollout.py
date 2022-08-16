@@ -72,7 +72,7 @@ def main():
         append_buffer(buffer, (S, A, R, S_, done, p, info))
 
         if done:
-            E = env.reset()
+            S = env.reset()
             done = False
             t = 0
         else:
