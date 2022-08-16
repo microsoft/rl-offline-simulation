@@ -75,7 +75,7 @@ class OfflineDataset:
                 self.experience['rewards'][i],
                 self.experience['next_observations'][i],
                 self.experience['terminals'][i],
-                self.experience['info'][i] if 'info' in self.experience else {})
+                self.experience['infos'][i] if 'infos' in self.experience else {})
 
     @classmethod
     def load_hdf5(cls, path, group_name=None):

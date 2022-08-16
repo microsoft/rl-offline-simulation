@@ -21,6 +21,7 @@ def reset_buffer():
         'next_observations': [],
         'terminals': [],
         'infos/probs': [],
+        'infos/steps': [],
    }
 
 def append_buffer(buffer, data):
@@ -31,6 +32,7 @@ def append_buffer(buffer, data):
     buffer['next_observations'].append(S_)
     buffer['terminals'].append(done)
     buffer['infos/probs'].append(p)
+    buffer['infos/steps'].append(info['t'])
 
 def npify(buffer):
     for k in buffer:
@@ -66,7 +68,7 @@ def main():
     buffer = reset_buffer()
     t = 0
     for _ in range(args.num_samples):
-        p = pi.get(tuple(S))
+        p = pi.get(tuple(S), np.ones(5) / 5)
         A = rng.choice(env.nA, p=p)
         S_, R, done, info = env.step(A)
         append_buffer(buffer, (S, A, R, S_, done, p, info))
