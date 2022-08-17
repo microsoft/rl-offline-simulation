@@ -170,12 +170,13 @@ class HOMEREncoder():
     def encode(self, observations):
         if not self.model or self.model.training:
             raise ValueError("Model not initialized. Either train a new model for the encoder or load an existing one.")
-
+        
+        observations = torch.tensor(observations, dtype=torch.float, device=self.device)
         with torch.no_grad():
             log_prob = F.log_softmax(self.model.obs_encoder(observations), dim=1)
             _, argmax_indices = log_prob.max(dim=1)
 
-        return argmax_indices
+        return argmax_indices.detach().cpu().numpy()
 
     @staticmethod
     def _calc_loss(model, batch, temperature=1.0, discretized=False):
