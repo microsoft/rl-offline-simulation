@@ -2,15 +2,15 @@ description: Run HOMER encoder training in continuos grid for the Offline RL sim
 
 target:
   service: amlk8s
-  name: itplabrl1cl1
+  name: v100-32gb-wus2 #itplabrl1cl1 
   vc: resrchvc
 
   # service: sing
   # name: msrresrchvc
 
 environment:
-  image: azureml/curated/pytorch-1.10-ubuntu18.04-py38-cuda11-gpu:28 #pytorch/pytorch:1.4-cuda10.1-cudnn7-devel
-  registry: mcr.microsoft.com #docker.io # any public registry can be specified here
+  image: pytorch/pytorch:1.5-cuda10.1-cudnn7-devel
+  registry: registry.hub.docker.com
   setup:
     - pip install tensorboard --user
 
@@ -75,12 +75,12 @@ search:
   type: grid
   params:
   - name: lr
-    values: [1e-3, 3e-4, 5e-5]
+    values: [1e-3] #, 3e-4, 5e-5]
   - name: seed
-    values: [0, 7, 17, 42, 100]
+    values: [0] #, 7, 17, 42, 100]
   - name: latent_size
-    values: [25, 50]
+    values: [25] #, 50]
   - name: hidden_size
-    values: [32, 64, 128]
+    values: [32] #, 64, 128]
   - name: temp_decay
-    values: [True, False]
+    values: [True] # , False]

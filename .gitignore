@@ -1,3 +1,7 @@
+# If you want to commit any HDF5 files, use -f to force the commit.
+*.hdf5
+*.h5
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
