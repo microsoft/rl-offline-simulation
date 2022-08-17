@@ -3,20 +3,16 @@ import copy, itertools
 
 class PSRS(object):
     # Rejection sampler that acts as an environment
-    def __init__(self, buffer, nS=25, nA=5, latent_state_func=lambda s: s):
-        self.raw_buffer = buffer # (s, a, r, s', done, p), where p is the logging policy's probability
+    def __init__(self, buffer, nS=25, nA=5):
+        self.raw_buffer = buffer # (s, a, r, s', done, p, info), where p is the logging policy's probability
         self.nS = nS
         self.nA = nA
-        self.latent_state_func = latent_state_func
-        self._calculate_latent_state() # self.buffer contains (z, s, a, r, s', done, p)
+        self._calculate_latent_state() # self.buffer contains (z, s, a, r, z', s', done, p, info)
         self.reset_sampler()
         self.reset()
     
     def _calculate_latent_state(self):
-        try:
-            self.buffer = [(self.latent_state_func(s), s, *rest) for s, *rest in self.raw_buffer]
-        except:
-            self.buffer = [(self.latent_state_func(info), s, a, r, s_, done, p, info) for s, a, r, s_, done, p, info in self.raw_buffer]
+        self.buffer = [(info['z'], s, a, r, info['next_z'], s_, done, p, info) for s, a, r, s_, done, p, info in self.raw_buffer]
     
     def reset_sampler(self, seed=None):
         self.init_queue = [(elt[0], elt[1]) for elt in self.buffer if elt[-1]['t'] == 0]
@@ -34,23 +30,24 @@ class PSRS(object):
         if len(self.init_queue) == 0:
             self.s = None
             return None
-        _, self.s = self.init_queue.pop(0)
+        self.z, self.s = self.init_queue.pop(0)
         return self.s
     
     def step(self, p_new):
         s = self.s
+        z = self.z
         reject = True
         while reject:
-            z = self.latent_state_func(s)
             if len(self.queues[z]) == 0:
                 return None, None, None, None
-            _z, _s, a, r, s_next, done, p_log, info = self.queues[z].pop(0)
+            _z, _s, a, r, z_next, s_next, done, p_log, info = self.queues[z].pop(0)
             assert z == _z
             M = (p_new / p_log).max()
             u = self.rejection_sampling_rng.random()
             if u <= p_new[a] / p_log[a] / M:
                 reject = False
         self.s = s_next
+        self.z = z_next
         return s_next, r, done, {'z': z, 'a': a, 'p': p_log}
 
 class PSRS_Exo(object):

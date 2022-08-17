@@ -5,16 +5,17 @@ from .psrs import PSRS
 
 class PerStateRejectionSampling(RevealedRandomnessEnv):
     def __init__(
-            self,
-            dataset: OfflineDataset,
-            num_states=None,
-            latent_state_func=None):
+        self,
+        dataset: OfflineDataset,
+        num_states=None,
+        encoder=None,
+    ):
 
-        if not isinstance(dataset.observation_space, gym.spaces.Discrete) and num_states is None and latent_state_func is None:
+        if not isinstance(dataset.observation_space, gym.spaces.Discrete) and num_states is None and encoder is None:
             raise ValueError('PerStateRejectionSampling only supports discrete observation spaces')
         
-        if (num_states is None or latent_state_func is None) and (num_states != latent_state_func):
-            raise ValueError('num_states and latent_state_func either both need to be None, or both need to be specified')
+        if (num_states is None or encoder is None) and (num_states != encoder):
+            raise ValueError('num_states and encoder either both need to be None, or both need to be specified')
 
         if not isinstance(dataset.action_space, gym.spaces.Discrete):
             # TODO: I believe it should be possible to support continuous action spaces, e.g. by using
@@ -23,6 +24,9 @@ class PerStateRejectionSampling(RevealedRandomnessEnv):
 
         self._dataset = dataset
 
+        zs = encoder.encode(dataset.experience['observations'])
+        next_zs = encoder.encode(dataset.experience['next_observations'])
+        
         # PSRS expects action probabilities in the one but last element of the tuple.
         legacy_tuples = (
             (
@@ -32,9 +36,10 @@ class PerStateRejectionSampling(RevealedRandomnessEnv):
                 row.next_observation,
                 row.terminal,
                 row.action_distribution,
-                {**row.info, 't': row.step}
+                {**row.info, 't': row.step, 
+                 'z': zs[i], 'next_z': next_zs[i]}
             )
-            for row in dataset.iterate_row_tuples()
+            for i, row in enumerate(dataset.iterate_row_tuples())
         )
 
         kwargs = {
@@ -45,8 +50,6 @@ class PerStateRejectionSampling(RevealedRandomnessEnv):
         # Optional arguments - pass only if not None. Otherwise, use default arg values.
         if num_states is not None:
             kwargs['nS']=num_states
-        if latent_state_func is not None:
-            kwargs['latent_state_func']=latent_state_func
 
         self._impl = PSRS(**kwargs)
     
@@ -58,8 +61,11 @@ class PerStateRejectionSampling(RevealedRandomnessEnv):
     def action_space(self):
         return self._dataset.action_space
     
-    def reset(self):
-        return self._impl.reset()
+    def reset_sampler(self, seed=None):
+        return self._impl.reset_sampler(seed=seed)
+    
+    def reset(self, seed=None):
+        return self._impl.reset(seed=seed)
 
     def step(self, action):
         raise NotImplementedError(
@@ -67,5 +73,7 @@ class PerStateRejectionSampling(RevealedRandomnessEnv):
             'Sampling efficiently, your agent needs to reveal its action distribution via the step_dist() method instead.')
     
     def step_dist(self, action_dist):
-        next_obs, r, done, info = self._impl.step(action_dist)
+        next_obs, r, done, info = self._impl.step(action_dist.probs)
+        if next_obs is None:
+            return None, None, None, None, None
         return info['a'], next_obs, r, done, info
