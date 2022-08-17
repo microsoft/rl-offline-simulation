@@ -2,7 +2,7 @@ description: Run HOMER encoder training in continuos grid for the Offline RL sim
 
 target:
   service: amlk8s
-  name: v100-32gb-wus2 #itplabrl1cl1 
+  name: itplabrr1cl1 #v100-32gb-wus2 #itplabrl1cl1 
   vc: resrchvc
 
   # service: sing
