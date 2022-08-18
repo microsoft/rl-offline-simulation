@@ -130,7 +130,7 @@ class MLPActorCritic(nn.Module):
         return pi, v.numpy()
 
     def get_logp(self, pi, a):
-        logp_a = self.pi._log_prob_from_distribution(pi, a)
+        logp_a = self.pi._log_prob_from_distribution(pi, torch.as_tensor(a))
         return logp_a
     
     def act(self, obs):
