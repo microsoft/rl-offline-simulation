@@ -24,8 +24,13 @@ class PerStateRejectionSampling(RevealedRandomnessEnv):
 
         self._dataset = dataset
 
-        zs = encoder.encode(dataset.experience['observations'])
-        next_zs = encoder.encode(dataset.experience['next_observations'])
+        if encoder is not None:
+            zs = encoder.encode(dataset.experience['observations'])
+            next_zs = encoder.encode(dataset.experience['next_observations'])
+        else:
+            # Assume discrete observations that correspond to states
+            zs = dataset.experience['observations']
+            next_zs = dataset.experience['next_observations']
         
         # PSRS expects action probabilities in the one but last element of the tuple.
         legacy_tuples = (
