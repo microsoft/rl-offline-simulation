@@ -28,7 +28,6 @@ class PSRS(object):
             np.random.default_rng(seed=seed).shuffle(self.queues[z])
     
     def reset(self, seed=None):
-        self.rejection_sampling_rng = np.random.default_rng(seed=seed)
         if len(self.init_queue) == 0:
             self.s = None
             return None
