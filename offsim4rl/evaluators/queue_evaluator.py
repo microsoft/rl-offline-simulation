@@ -74,15 +74,13 @@ class QueueEvaluator:
         if next_obs is None:
             return None, None, None, None
         return next_obs, r, done, info
-        # raise NotImplementedError(
-        #     f'{self.__class__.__name__} does not support step(). To implement Per-State Rejection ' +
-        #     'Sampling efficiently, your agent needs to reveal its action distribution via the step_dist() method instead.')
-    
-    # def step_dist(self, action_dist):
-    #     next_obs, r, done, info = self._impl.step(action_dist.probs)
-    #     if next_obs is None:
-    #         return None, None, None, None, None
-    #     return info['a'], next_obs, r, done, info
+
+    def step_dist(self, action_dist):
+        a = action_dist.sample()
+        next_obs, r, done, info = self._impl.step(a)
+        if next_obs is None:
+            return None, None, None, None, None
+        return info['a'], next_obs, r, done, info
 
 class QueueEvaluator_impl(object):
     def __init__(self, buffer, nS=25, nA=5):
