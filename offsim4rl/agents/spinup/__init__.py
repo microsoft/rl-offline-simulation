@@ -1,6 +1,6 @@
 # Algorithms
-from .algos.ppo.ppo import ppo
-from .algos.ppo_revealed.ppo import ppo as ppo_revealed
+from .algos.ppo import ppo
+from .algos.ppo_revealed import ppo_revealed
 
 # Loggers
-from .utils.logx import Logger, EpochLogger
+from spinup.utils.logx import Logger, EpochLogger

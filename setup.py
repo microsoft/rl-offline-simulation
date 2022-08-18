@@ -22,7 +22,8 @@ setuptools.setup(
         "seaborn",
         "stable-baselines3",
         "tensorboardX",
-        "torch",
-        "tqdm"
+        "torch>=1.10",
+        "tqdm",
+        "spinup @ git+https://github.com/shengpu1126/spinningup.git@shengpu1126-patch-1#egg=spinup",
     ],
 )
