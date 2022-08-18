@@ -130,7 +130,6 @@ class MLPActorCritic(nn.Module):
         return pi, v.numpy()
 
     def get_logp(self, pi, a):
-        a = pi.sample()
         logp_a = self.pi._log_prob_from_distribution(pi, a)
         return logp_a
     
