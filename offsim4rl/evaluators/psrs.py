@@ -15,6 +15,8 @@ class PSRS(object):
         self.buffer = [(info['z'], s, a, r, info['next_z'], s_, done, p, info) for s, a, r, s_, done, p, info in self.raw_buffer]
     
     def reset_sampler(self, seed=None):
+        self.rejection_sampling_rng = np.random.default_rng(seed=seed)
+        
         self.init_queue = [(elt[0], elt[1]) for elt in self.buffer if elt[-1]['t'] == 0]
         np.random.default_rng(seed=seed).shuffle(self.init_queue)
         
