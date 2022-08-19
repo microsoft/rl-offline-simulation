@@ -2,18 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-def gumbel_softmax(logits, temperature=1.0, hard=False):
-    gumbels = -torch.empty_like(logits).exponential_().log()
-    x = (logits + gumbels) / temperature
-    y_soft = F.softmax(x, dim=-1)
-    if hard:
-        _, index = y_soft.max(-1, keepdim=True)
-        y_hard = torch.zeros_like(logits).scatter_(-1, index, 1.0)
-        ret = y_hard - y_soft.detach() + y_soft
-    else:
-        ret = y_soft
-    return ret
-
 class EncoderModel(nn.Module):
     """ Model for learning the backward kinematic inseparability """
 
@@ -51,8 +39,8 @@ class EncoderModel(nn.Module):
         curr_encoding = self.obs_encoder(curr_observations)
         action_x = self.action_emb(actions).squeeze()
 
-        prev_z = gumbel_softmax(prev_encoding, temperature=temperature, hard=discretized)
-        curr_z = gumbel_softmax(curr_encoding, temperature=temperature, hard=discretized)
+        prev_z = F.gumbel_softmax(prev_encoding, tau=temperature, hard=discretized)
+        curr_z = F.gumbel_softmax(curr_encoding, tau=temperature, hard=discretized)
         
         x = torch.cat([prev_z, action_x, curr_z], dim=1)
         logits = self.classifier(x)

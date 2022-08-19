@@ -139,15 +139,8 @@ class HOMEREncoder():
             if epoch_ % 10 == 0:
                 x, y = np.meshgrid(np.arange(0, 1, 0.002), np.arange(0, 1, 0.002))
                 obs = torch.tensor(np.stack([x, y]).reshape((2, -1)).T, device=self.device).float()
-
-                with torch.no_grad():
-                    emb = self.encode(obs).detach().cpu()
-                
-                df_output = []
-                for i, x in zip(emb, obs):
-                    df_output.append((i, *x))
-                df_output = pd.DataFrame(df_output, columns=['i', 'x', 'y'])
-
+                emb = self.encode(obs)
+                df_output = pd.DataFrame([(i, *x) for i, x in zip(emb, obs)], columns=['i', 'x', 'y'])
                 plot_latent_state_color_map(df_output, os.path.join(self.log_dir, 'vis', f'epoch_{epoch_}_latent_state.png'))
 
             if model_dir is None:
@@ -219,12 +212,7 @@ if __name__ == "__main__":
 
     x, y = np.meshgrid(np.arange(0, 1, 0.002), np.arange(0, 1, 0.002))
     obs = torch.tensor(np.stack([x, y]).reshape((2, -1)).T, device=homer_encoder.device).float()
-
-    emb = homer_encoder.encode(obs).detach().cpu()
-    df_output = []
-    for i, x in zip(emb, obs):
-        df_output.append((i, *x))
-
-    df_output = pd.DataFrame(df_output, columns=['i', 'x', 'y'])
+    emb = homer_encoder.encode(obs)
+    df_output = pd.DataFrame([(i, *x) for i, x in zip(emb, obs)], columns=['i', 'x', 'y'])
 
     plot_latent_state_color_map(df_output, os.path.join(args.output_dir, 'latent_state.png'))
