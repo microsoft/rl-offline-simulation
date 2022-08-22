@@ -228,8 +228,6 @@ def ppo_revealed(env_fn, actor_critic=MLPActorCritic_Revealed, ac_kwargs=dict(),
                      DeltaLossV=(loss_v.item() - v_l_old))
 
     def run_validation():
-        if not validate:
-            return
         env = val_kwargs['val_env_fn']()
         Gs = []
         Ts = []
@@ -311,9 +309,10 @@ def ppo_revealed(env_fn, actor_critic=MLPActorCritic_Revealed, ac_kwargs=dict(),
         update()
 
         # Validate
-        Gs, Ts = run_validation()
-        for G, T in zip(Gs, Ts):
-            logger.store(Val_EpRet=G, Val_EpLen=T)
+        if validate:
+            Gs, Ts = run_validation()
+            for G, T in zip(Gs, Ts):
+                logger.store(Val_EpRet=G, Val_EpLen=T)
 
         # Log info about epoch
         logger.log_tabular('Epoch', epoch)
@@ -329,7 +328,8 @@ def ppo_revealed(env_fn, actor_critic=MLPActorCritic_Revealed, ac_kwargs=dict(),
         logger.log_tabular('KL', average_only=True)
         logger.log_tabular('ClipFrac', average_only=True)
         logger.log_tabular('StopIter', average_only=True)
-        logger.log_tabular('Val_EpRet', with_min_and_max=True)
-        logger.log_tabular('Val_EpLen', with_min_and_max=True)
+        if validate:
+            logger.log_tabular('Val_EpRet', with_min_and_max=True)
+            logger.log_tabular('Val_EpLen', with_min_and_max=True)
         logger.log_tabular('Time', time.time()-start_time)
         logger.dump_tabular()
