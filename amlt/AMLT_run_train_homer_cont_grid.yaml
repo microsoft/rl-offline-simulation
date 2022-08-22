@@ -1,0 +1,91 @@
+description: Run HOMER encoder training in continuos grid for the Offline RL simulation project.
+
+target:
+  service: amlk8s
+  name: itplabrr1cl1 #v100-32gb-wus2 #itplabrl1cl1 
+  vc: resrchvc
+
+  # service: sing
+  # name: msrresrchvc
+
+environment:
+  image: pytorch/pytorch:1.5-cuda10.1-cudnn7-devel
+  registry: registry.hub.docker.com
+  # image: amlt-sing/pytorch-1.11.0
+  setup:
+    - pip install tensorboard --user
+
+code:
+  # local directory of the code. this will be uploaded to the server.
+  # $CONFIG_DIR is expanded to the directory of this config file
+  local_dir: $CONFIG_DIR/../
+
+storage:
+    input:
+      storage_account_name: fevieiraamlws6993149298
+      container_name: azureml-blobstore-1ff2ddae-1a1c-4cfb-b6aa-412edec76923
+      mount_dir: /mnt/input
+    output:
+        storage_account_name: fevieiraamlws6993149298
+        container_name: azureml-blobstore-1ff2ddae-1a1c-4cfb-b6aa-412edec76923
+        mount_dir: /mnt/output
+
+# jobs:
+#   - name: train_homer
+#     sku: G1-V100
+#     command:
+#       - pip install -r requirements.txt
+#       - pip install -e .
+#       - python ./examples/continuous_grid/train_homer_encoder.py
+#           --input_dir /mnt/input/offsim4rl
+#           --output_dir ./logs
+#           --num_epochs 1000
+#           --batch_size 64
+#           --weight_decay 0.0
+#           --lr 1e-3
+#           --seed 0
+#           --latent_size 50
+#           --hidden_size 64
+#           --temperature_decay False
+#           --num_samples 100000
+#     sla_tier: Premium
+#     execution_mode: basic
+#     priority: high
+#     azml_int: True
+#     submit_args:
+#       env:
+#         AZUREML_COMPUTE_USE_COMMON_RUNTIME: false 
+
+search:
+  job_template:
+    name: homer_lr_{lr}_seed_{seed}_lnt_{latent_size}_hid_{hidden_size}_temp_0
+    sku: G1-V100
+    sla_tier: Premium
+    execution_mode: basic
+    priority: high
+    azml_int: True
+    command:
+    - pip install -r requirements.txt
+    - pip install -e .
+    - python ./examples/continuous_grid/train_homer_encoder.py
+        --input_dir /mnt/input/offsim4rl
+        --output_dir ./logs
+        --num_epochs 1000
+        --batch_size 64
+        --weight_decay 0.0
+        --lr {lr}
+        --seed {seed}
+        --latent_size {latent_size}
+        --hidden_size {hidden_size}
+        --temperature_decay False
+  max_trials: 10
+  type: grid
+  params:
+  - name: lr
+    values: [1e-3] #, 3e-4, 5e-5]
+  - name: seed
+    values: [0, 7, 17, 42, 100]
+  - name: latent_size
+    values: [25, 50]
+  - name: hidden_size
+    values: [64] #, 32, 128]

@@ -20,10 +20,8 @@ setuptools.setup(
         "joblib",
         "matplotlib",
         "seaborn",
-        "stable-baselines3",
         "tensorboardX",
         "torch>=1.10",
         "tqdm",
-        "spinup @ git+https://github.com/shengpu1126/spinningup.git@shengpu1126-patch-1#egg=spinup",
     ],
 )
