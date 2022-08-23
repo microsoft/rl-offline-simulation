@@ -40,7 +40,7 @@ def record_dataset_in_memory(
         seed=None,
         worker_id=0,
         workers_num=1,
-        strict_termination=False):
+        new_step_api=True):
     
     def _append_buffer(buffer, **kwargs):
         for k,v in kwargs.items():
@@ -60,20 +60,22 @@ def record_dataset_in_memory(
 
     buffer = defaultdict(lambda: [])
     t = 0
+    reward = None
     for _ in range(num_samples):
         action_dist = agent.begin_episode(obs) if t == 0 else agent.step(reward, obs)
 
         action = sample_dist(action_dist)
         step_result = env.step(action)
+
         if len(step_result) == 4:
-            # Old gym API.
-            if strict_termination:
-                raise ValueError("Strict termination is enabled, but the environment seems return just 'done' instead of 'terminated' and 'truncated'.")
+            # Old gym API. Discouraged, since it may incorrectly mark regular states as terminal states, due to episode truncation.
+            if new_step_api:                
+                raise ValueError("new_step_api is enabled, but the environment seems return just 'done' instead of 'terminated' and 'truncated'. Use different environment or set new_step_api to False.")
             next_obs, reward, done, info = step_result
             terminated = done
             truncated = False
         else:
-            # New gym API.
+            # New gym API. Recommended for collecting data for offline simulation.
             next_obs, reward, terminated, truncated, info = env.step(action)
 
         numpy_infos = {}
