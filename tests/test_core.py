@@ -5,8 +5,21 @@ import pytest
 from torch.distributions import Categorical
 from offsim4rl.core import RevealedRandomnessEnvWrapper
 
-def test_revealed_randomness_env_numpy():
+def test_revealed_randomness_env_numpy_old_step_api():
     env = gym.make('CartPole-v0')
+    env = RevealedRandomnessEnvWrapper(env)
+    assert hasattr(env, 'step_dist')
+    obs = env.reset()
+    assert type(obs) == np.ndarray
+    action, next_obs, reward, done, info = env.step_dist(np.array([0.5, 0.5]))
+    assert type(action) == np.int64
+    assert type(next_obs) == np.ndarray
+    assert type(reward) == float
+    assert type(done) == bool
+    assert type(info) == dict
+
+def test_revealed_randomness_env_numpy_new_step_api():
+    env = gym.make('CartPole-v0', new_step_api=True)
     env = RevealedRandomnessEnvWrapper(env)
     assert hasattr(env, 'step_dist')
     obs = env.reset()
@@ -25,12 +38,11 @@ def test_revealed_randomness_env_torch():
     assert hasattr(env, 'step_dist')
     obs = env.reset()
     assert type(obs) == np.ndarray
-    action, next_obs, reward, terminated, timeout, info = env.step_dist(Categorical(torch.tensor([0.5, 0.5])))
+    action, next_obs, reward, done, info = env.step_dist(Categorical(torch.tensor([0.5, 0.5])))
     assert type(action) == torch.Tensor
     assert type(next_obs) == np.ndarray
     assert type(reward) == float
-    assert type(terminated) == bool
-    assert type(timeout) == bool
+    assert type(done) == bool
     assert type(info) == dict
 
 def test_revealed_randomness_env_other():
