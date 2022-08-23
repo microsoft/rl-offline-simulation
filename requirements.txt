@@ -14,4 +14,5 @@ stable-baselines3
 tensorboardX
 torch
 tqdm
+git+https://github.com/shengpu1126/spinningup.git@shengpu1126-patch-1#egg=spinup
 pytest

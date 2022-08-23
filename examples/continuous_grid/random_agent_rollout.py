@@ -38,6 +38,8 @@ def npify(buffer):
     for k in buffer:
         if k == 'terminals':
             dtype = np.bool_
+        if k == 'actions' or k == 'infos/steps':
+            dtype = int
         else:
             dtype = np.float32
 
