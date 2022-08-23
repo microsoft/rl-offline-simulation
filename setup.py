@@ -15,7 +15,7 @@ setuptools.setup(
     install_requires=[
         "azureml-core",
         "azureml-sdk",
-        "gym==0.21.0",
+        "gym",
         "h5py",
         "joblib",
         "matplotlib",

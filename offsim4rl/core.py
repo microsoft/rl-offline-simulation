@@ -4,10 +4,21 @@ import numpy as np
 from torch.distributions import Distribution
 from typing import Tuple
 
-class RevealedRandomnessEnv(gym.Env, abc.ABC):
+class RevealedRandomnessEnv(gym.Env):
     """Gym environment with an additional step_dist method allowing the agent
     to pass in a distribution over the action space.
     """
+
+    def step(self, action) -> Tuple[np.ndarray, float, bool, bool, dict]:
+        step_ret = super().step(action)
+        if len(step_ret) == 4:
+            # Old interface.
+            obs, reward, terminated, info = step_ret
+            truncated = False
+        else:
+            # New interface.
+            obs, reward, terminated, truncated, info = step_ret
+        return obs, reward, terminated, truncated, info
 
     def step_dist(self, action_dist: object) -> Tuple[object, object, float, bool, dict]:
         """Run one timestep of the environment's dynamics. When end of
@@ -39,8 +50,8 @@ class RevealedRandomnessEnv(gym.Env, abc.ABC):
         else:
             # NOTE: other types may be handled by overloads of this method.
             raise ValueError("action_dist must be a torch.distributions.Distribution or numpy array")
-        next_obs, reward, done, info = self.step(numpy_action)
-        return orig_action, next_obs, reward, done, info
+        next_obs, reward, terminated, truncated, info = self.step(numpy_action)
+        return orig_action, next_obs, reward, terminated, truncated, info
 
 
 class RevealedRandomnessEnvWrapper(RevealedRandomnessEnv, gym.Wrapper):

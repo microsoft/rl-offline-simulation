@@ -133,3 +133,8 @@ aml_ws_configs/
 data/
 results/
 outputs/
+
+
+.test_output
+*.hdf5
+*.h5
