@@ -4,7 +4,7 @@ import numpy as np
 from torch.distributions import Distribution
 from typing import Tuple
 
-class RevealedRandomnessEnv(gym.Env, abc.ABC):
+class RevealedRandomnessEnv(gym.Env):
     """Gym environment with an additional step_dist method allowing the agent
     to pass in a distribution over the action space.
     """
@@ -31,14 +31,16 @@ class RevealedRandomnessEnv(gym.Env, abc.ABC):
         # NOTE: another option could be to define our own abstraction Distribution that may wrap other types.
         if isinstance(action_dist, Distribution):
             # Return torch action which may be needed by the agent (e.g., to compute the gradient).
-            action = action_dist.sample().cpu().numpy()
+            orig_action = action_dist.sample()
+            numpy_action = orig_action.cpu().numpy()
         elif isinstance(action_dist, np.ndarray):
-            action = np.random.choice(a=np.arange(len(action_dist)), p=action_dist)
+            orig_action = np.random.choice(a=np.arange(len(action_dist)), p=action_dist)
+            numpy_action = orig_action
         else:
             # NOTE: other types may be handled by overloads of this method.
             raise ValueError("action_dist must be a torch.distributions.Distribution or numpy array")
-        next_obs, reward, done, info = self.step(action)
-        return action, next_obs, reward, done, info
+        next_obs, reward, done, info = self.step(numpy_action)
+        return orig_action, next_obs, reward, done, info
 
 
 class RevealedRandomnessEnvWrapper(RevealedRandomnessEnv, gym.Wrapper):

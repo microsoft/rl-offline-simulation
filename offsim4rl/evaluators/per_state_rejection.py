@@ -2,6 +2,7 @@ import gym
 from offsim4rl.core import RevealedRandomnessEnv
 from offsim4rl.data import OfflineDataset
 from .psrs import PSRS
+from torch.distributions import Distribution
 
 class PerStateRejectionSampling(RevealedRandomnessEnv):
     def __init__(
@@ -78,7 +79,9 @@ class PerStateRejectionSampling(RevealedRandomnessEnv):
             'Sampling efficiently, your agent needs to reveal its action distribution via the step_dist() method instead.')
     
     def step_dist(self, action_dist):
-        next_obs, r, done, info = self._impl.step(action_dist.probs)
+        if isinstance(action_dist, Distribution):
+            action_dist = action_dist.probs
+        next_obs, r, done, info = self._impl.step(action_dist)
         if next_obs is None:
             return None, None, None, None, None
         return info['a'], next_obs, r, done, info
