@@ -12,7 +12,7 @@ class PSRS(object):
         self.reset()
     
     def _calculate_latent_state(self):
-        self.buffer = [(info['z'], s, a, r, info['next_z'], s_, done, p, info) for s, a, r, s_, done, p, info in self.raw_buffer]
+        self.buffer = [(info['z'], s, a, r, info['z_next'] if 'z_next' in info else info['next_z'], s_, done, p, info) for s, a, r, s_, done, p, info in self.raw_buffer]
     
     def reset_sampler(self, seed=None):
         self.rejection_sampling_rng = np.random.default_rng(seed=seed)
