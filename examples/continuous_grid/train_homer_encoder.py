@@ -51,6 +51,7 @@ if __name__ == "__main__":
     )
 
     homer_encoder = HOMEREncoder(
+        obs_dim=2, action_dim=5,
         latent_size=args.latent_size,
         hidden_size=args.hidden_size,
         log_dir=os.path.join(args.output_dir, model_dir),

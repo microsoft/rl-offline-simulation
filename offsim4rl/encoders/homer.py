@@ -22,9 +22,9 @@ from offsim4rl.data import SAS_Dataset
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -  %(message)s', level=logging.INFO)
 
 class HOMEREncoder():
-    def __init__(self, latent_size, hidden_size, model_path=None, log_dir='./logs'):
+    def __init__(self, obs_dim, action_dim, latent_size, hidden_size, model_path=None, log_dir='./logs'):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.model = EncoderModel(2, 5, latent_size, hidden_size).to(self.device)
+        self.model = EncoderModel(obs_dim, action_dim, latent_size, hidden_size).to(self.device)
         if model_path:
             self.model.load(model_path)
             self.model.eval()
@@ -142,11 +142,7 @@ class HOMEREncoder():
                 best_model.save(os.path.join(model_dir, f"epoch_{epoch_}_" + model_name))
             
             if epoch_ % 10 == 0:
-                x, y = np.meshgrid(np.arange(0, 1, 0.002), np.arange(0, 1, 0.002))
-                obs = torch.tensor(np.stack([x, y]).reshape((2, -1)).T, device=self.device).float()
-                emb = self.encode(obs)
-                df_output = pd.DataFrame([(i, *x) for i, x in zip(emb, obs)], columns=['i', 'x', 'y'])
-                plot_latent_state_color_map(df_output, os.path.join(self.log_dir, 'vis', f'epoch_{epoch_}_latent_state.png'))
+                self._visualize(fname=f'epoch_{epoch_}_latent_state.png')
 
             best_model.save(os.path.join(model_dir, model_name))
 
@@ -186,6 +182,13 @@ class HOMEREncoder():
         info_dict["classification_loss"] = classification_loss
 
         return classification_loss, info_dict
+    
+    def _visualize(self, fname='latent_state.png'):
+        x, y = np.meshgrid(np.arange(0, 1, 0.002), np.arange(0, 1, 0.002))
+        obs = torch.tensor(np.stack([x, y]).reshape((2, -1)).T, dtype=torch.float, device=self.device)
+        emb = self.encode(obs)
+        df_output = pd.DataFrame([(i, *x) for i, x in zip(emb, obs)], columns=['i', 'x', 'y'])
+        plot_latent_state_color_map(df_output, os.path.join(self.log_dir, 'vis', fname))
 
 
 if __name__ == "__main__":
@@ -206,14 +209,10 @@ if __name__ == "__main__":
                 f"dZ={args.latent_size},dH={args.hidden_size},lr={args.lr},weight_decay={args.weight_decay}/"
 
     homer_encoder = HOMEREncoder(
+        obs_dim=2, action_dim=5,
         latent_size=args.latent_size,
         hidden_size=args.hidden_size,
         model_path=os.path.join(args.output_dir, 'encoder_model.pt'),
         log_dir=os.path.join(args.output_dir, 'logs'),
     )
-
-    x, y = np.meshgrid(np.arange(0, 1, 0.002), np.arange(0, 1, 0.002))
-    obs = torch.tensor(np.stack([x, y]).reshape((2, -1)).T, dtype=torch.float, device=homer_encoder.device)
-    emb = homer_encoder.encode(obs)
-    df_output = pd.DataFrame([(i, *x) for i, x in zip(emb, obs)], columns=['i', 'x', 'y'])
-    plot_latent_state_color_map(df_output, os.path.join(args.output_dir, 'latent_state.png'))
+    homer_encoder._visualize(fname='latent_state.png')
