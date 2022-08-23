@@ -156,9 +156,9 @@ class SAS_Dataset(Dataset):
 
     def __getitem__(self, index):
         return (
-            torch.tensor(self.x[index], device=self.device).float(),
-            torch.tensor(self.a[index], device=self.device).long(),
-            torch.tensor(self.x_next[index], device=self.device).float(),
+            torch.tensor(self.x[index], dtype=torch.float, device=self.device),
+            torch.tensor(self.a[index], dtype=torch.long, device=self.device),
+            torch.tensor(self.x_next[index], dtype=torch.float, device=self.device),
         )
 
     def __len__(self):
