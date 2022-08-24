@@ -9,6 +9,7 @@ from torch.utils.data import Dataset, DataLoader, random_split
 
 def test_homer_encoder_inference():
     homer_encoder = HOMEREncoder(
+        obs_dim=2, action_dim=5,
         latent_size=25,
         hidden_size=64,
         model_path=os.path.join('models', 'encoders', 'encoder_model.pt'),
