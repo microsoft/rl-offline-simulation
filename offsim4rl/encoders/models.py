@@ -60,19 +60,6 @@ class EncoderModel(nn.Module):
     def gen_prob(self, prev_observations, actions, observations, discretized, temperature=1.0):
         return self.__gen_logits__(prev_observations, actions, observations, discretized, temperature=temperature, type="softmax")
 
-    def encode_observations(self, observations):
-        if self.config["feature_type"] == 'feature':
-            assert len(observations.size()) == 1
-            observations = observations.view(1, -1)
-        else:
-            raise NotImplementedError()
-
-        log_prob = F.log_softmax(self.obs_encoder(observations), dim=1)
-
-        argmax_indices = log_prob.max(1)[1]
-
-        return int(argmax_indices[0])
-
     @staticmethod
     def _freeze_param(parameters):
         for param in parameters:
