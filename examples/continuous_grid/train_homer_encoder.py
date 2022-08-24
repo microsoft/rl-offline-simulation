@@ -51,6 +51,7 @@ if __name__ == "__main__":
     )
 
     homer_encoder = HOMEREncoder(
+        obs_dim=2, action_dim=5,
         latent_size=args.latent_size,
         hidden_size=args.hidden_size,
         log_dir=os.path.join(args.output_dir, model_dir),
@@ -67,14 +68,4 @@ if __name__ == "__main__":
     )
 
     # INFERENCE
-    x, y = np.meshgrid(np.arange(0, 1, 0.002), np.arange(0, 1, 0.002))
-    obs = torch.tensor(np.stack([x, y]).reshape((2, -1)).T, device=homer_encoder.device).float()
-
-    emb = homer_encoder.encode(obs).detach().cpu()
-    df_output = []
-    for i, x in zip(emb, obs):
-        df_output.append((i, *x))
-
-    df_output = pd.DataFrame(df_output, columns=['i', 'x', 'y'])
-
-    plot_latent_state_color_map(df_output, os.path.join(args.output_dir, model_dir, 'vis', 'latent_state.png'))
+    homer_encoder._visualize(fname='latent_state.png')

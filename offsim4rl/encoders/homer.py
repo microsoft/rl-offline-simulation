@@ -22,9 +22,9 @@ from offsim4rl.data import SAS_Dataset
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -  %(message)s', level=logging.INFO)
 
 class HOMEREncoder():
-    def __init__(self, observation_dim, action_dim, latent_size, hidden_size, model_path=None, log_dir='./logs'):
+    def __init__(self, obs_dim, action_dim, latent_size, hidden_size, model_path=None, log_dir='./logs'):
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        self.model = EncoderModel(observation_dim, action_dim, latent_size, hidden_size).to(self.device)
+        self.model = EncoderModel(obs_dim, action_dim, latent_size, hidden_size).to(self.device)
         if model_path:
             self.model.load(model_path)
             self.model.eval()
@@ -47,13 +47,15 @@ class HOMEREncoder():
         model_dir=None,
         model_name='encoder_model.pt',
     ):
+
+        if model_dir is None:
+            model_dir = os.path.join(self.log_dir, 'models')
+        os.makedirs(model_dir, exist_ok=True)
+
         # gumbel softmax temperature decay schedule
         tau0 = 1.0    # initial temperature
         TAU_ANNEAL_RATE = 0.005
         TAU_MIN = 0.5
-
-        if not self.model.training:
-            self.model.train()
 
         if optimizer is None:
             optimizer = optim.Adam(params=filter(lambda p: p.requires_grad, self.model.parameters()), lr=lr, weight_decay=weight_decay)
@@ -74,6 +76,7 @@ class HOMEREncoder():
         val_loader_impo = DataLoader(val_dataset, batch_size, shuffle=True)
 
         for epoch_ in range(1, num_epochs + 1):
+            self.model.train()
             train_loss, mean_entropy, num_train_examples = 0.0, 0.0, 0
             for train_batch in zip(train_loader_real, train_loader_impo):
                 if temperature_decay:
@@ -99,13 +102,15 @@ class HOMEREncoder():
             # mean_entropy = mean_entropy / float(max(1, num_train_examples))
 
             # Evaluate on test batches
+            self.model.eval()
             val_loss = 0
             num_val_examples = 0
-            for val_batch in zip(val_loader_real, val_loader_impo):
-                _, info_dict = loss_fn(self.model, val_batch, discretized=True)
-                batch_size = len(val_batch)
-                val_loss = val_loss + float(info_dict["classification_loss"]) * batch_size
-                num_val_examples = num_val_examples + batch_size
+            with torch.no_grad():
+                for val_batch in zip(val_loader_real, val_loader_impo):
+                    _, info_dict = loss_fn(self.model, val_batch, discretized=True)
+                    batch_size = len(val_batch)
+                    val_loss = val_loss + float(info_dict["classification_loss"]) * batch_size
+                    num_val_examples = num_val_examples + batch_size
 
             val_loss = val_loss / float(max(1, num_val_examples))
             logging.info("Epoch %r" % epoch_)
@@ -136,23 +141,10 @@ class HOMEREncoder():
             if epoch_ % 10 == 0:
                 best_model.save(os.path.join(model_dir, f"epoch_{epoch_}_" + model_name))
             
-            # TODO: the code below, if uncommented, breaks the test_e2e.test_cartpole_simulation test.
-            #   What does "2" mean below? Is it hardcoded observation dimensionality?
-            """
             if epoch_ % 10 == 0:
-                x, y = np.meshgrid(np.arange(0, 1, 0.002), np.arange(0, 1, 0.002))
-                obs = torch.tensor(np.stack([x, y]).reshape((2, -1)).T, device=self.device).float()
-                emb = self.encode(obs)
-                df_output = pd.DataFrame([(i, *x) for i, x in zip(emb, obs)], columns=['i', 'x', 'y'])
-                plot_latent_state_color_map(df_output, os.path.join(self.log_dir, 'vis', f'epoch_{epoch_}_latent_state.png'))
-            """
+                self._visualize(fname=f'epoch_{epoch_}_latent_state.png')
 
-            if model_dir is None:
-                model_dir = os.path.join(self.log_dir, 'models')
-
-            os.makedirs(model_dir, exist_ok=True)
             best_model.save(os.path.join(model_dir, model_name))
-            self.model.eval()
 
         logging.info("(Discretized: %r), Train/Test = %d/%d, Best Tune Loss %r at max_epoch %r, Train Loss after %r epochs is %r " % (
             False,
@@ -182,12 +174,21 @@ class HOMEREncoder():
         # Compute loss
         log_probs_real, _ = model.gen_log_prob(prev_observations=obs, actions=a, observations=next_obs_real, temperature=temperature, discretized=discretized)
         log_probs_impo, _ = model.gen_log_prob(prev_observations=obs, actions=a, observations=next_obs_impo, temperature=temperature, discretized=discretized)
-        classification_loss = (F.nll_loss(log_probs_real, torch.ones(len(obs)).long().to(obs.device)) + F.nll_loss(log_probs_impo, torch.zeros(len(obs)).long().to(obs.device))) / 2
+        classification_loss = (
+            F.nll_loss(log_probs_real, torch.ones(len(obs), dtype=torch.long, device=obs.device)) + 
+            F.nll_loss(log_probs_impo, torch.zeros(len(obs), dtype=torch.long, device=obs.device))) / 2
 
         info_dict = dict()
         info_dict["classification_loss"] = classification_loss
 
         return classification_loss, info_dict
+    
+    def _visualize(self, fname='latent_state.png'):
+        x, y = np.meshgrid(np.arange(0, 1, 0.002), np.arange(0, 1, 0.002))
+        obs = torch.tensor(np.stack([x, y]).reshape((2, -1)).T, dtype=torch.float, device=self.device)
+        emb = self.encode(obs)
+        df_output = pd.DataFrame([(i, *x) for i, x in zip(emb, obs)], columns=['i', 'x', 'y'])
+        plot_latent_state_color_map(df_output, os.path.join(self.log_dir, 'vis', fname))
 
 
 if __name__ == "__main__":
@@ -208,15 +209,10 @@ if __name__ == "__main__":
                 f"dZ={args.latent_size},dH={args.hidden_size},lr={args.lr},weight_decay={args.weight_decay}/"
 
     homer_encoder = HOMEREncoder(
+        obs_dim=2, action_dim=5,
         latent_size=args.latent_size,
         hidden_size=args.hidden_size,
         model_path=os.path.join(args.output_dir, 'encoder_model.pt'),
         log_dir=os.path.join(args.output_dir, 'logs'),
     )
-
-    x, y = np.meshgrid(np.arange(0, 1, 0.002), np.arange(0, 1, 0.002))
-    obs = torch.tensor(np.stack([x, y]).reshape((2, -1)).T, device=homer_encoder.device).float()
-    emb = homer_encoder.encode(obs)
-    df_output = pd.DataFrame([(i, *x) for i, x in zip(emb, obs)], columns=['i', 'x', 'y'])
-
-    plot_latent_state_color_map(df_output, os.path.join(args.output_dir, 'latent_state.png'))
+    homer_encoder._visualize(fname='latent_state.png')
