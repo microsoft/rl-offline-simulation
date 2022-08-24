@@ -14,6 +14,9 @@ setuptools.setup(
     # TODO: remove azureml_connector from here.
     packages=['offsim4rl', 'azureml_connector'],
     install_requires=[
+        # TODO: remove azureml dependencies from the core library. Currently they are needed by tb_utils.py.
+        "azureml-core",
+        "azureml-sdk",
         "gym",
         "h5py",
         "joblib",
