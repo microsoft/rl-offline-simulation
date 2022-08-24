@@ -2,6 +2,7 @@ import gym
 import h5py
 import numpy as np
 import random
+import logging
 from tqdm import tqdm
 import torch
 from torch.utils.data import Dataset, DataLoader, random_split
@@ -40,7 +41,8 @@ def record_dataset_in_memory(
         seed=None,
         worker_id=0,
         workers_num=1,
-        new_step_api=True):
+        new_step_api=True,
+        include_infos=True):
     
     def _append_buffer(buffer, **kwargs):
         for k,v in kwargs.items():
@@ -61,6 +63,10 @@ def record_dataset_in_memory(
     buffer = defaultdict(lambda: [])
     t = 0
     reward = None
+
+    info_keys = None
+    info_supported_types = (int, float, np.ndarray)
+
     for _ in range(num_samples):
         action_dist = agent.begin_episode(obs) if t == 0 else agent.step(reward, obs)
 
@@ -79,15 +85,24 @@ def record_dataset_in_memory(
             next_obs, reward, terminated, truncated, info = env.step(action)
 
         numpy_infos = {}
-        """
-        # TODO: this requires more thought... the environment may not return all info keys for every step.
-        #   How do we make sure that all info vectors are the same length as all other vectors and the info
-        #   values are aligned with the correct steps?
-        for k,v in info.items():
-            # is v numerical?
-            if isinstance(v, (int, float, np.ndarray)):
-                numpy_infos[f"infos/{k}"] = v
-        """
+
+        if include_infos:
+            if info_keys is None:
+                # To make sure the vectors of the same length and are well-aligned with the rest of the experience,
+                # only info keys that occur in the first step are being recorded.
+                info_keys = [k for k,v in info.items() if isinstance(v, info_supported_types)]
+            
+            for k in info_keys:
+                if k not in info:
+                    numpy_infos[f"infos/{k}"] = None
+                    logging.debug(f"Info key {k} is not present in the info dict. It will be recorded as None.")
+                elif isinstance(info[k], info_supported_types):
+                    numpy_infos[f"infos/{k}"] = info[k]
+                else:
+                    logging.warning(f"Example's info {k} is not of a supported type. Skipping.")
+            
+            remaining_keys = [k for k in info.keys() if k not in info_keys]
+            logging.debug(f"Skipping the following keys in the example's info dict: {remaining_keys}")
 
         _append_buffer(
             buffer,
