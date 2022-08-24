@@ -1,21 +1,12 @@
-# Recommended dependencies for the dev environment.
-
-azureml-core
-azureml-sdk
-
 # We recommend gym version 0.25.0 or above, which supports the new step API (with "terminated" and "truncated").
 gym[classic_control]>=0.25.0
 
-h5py
-joblib
-matplotlib
-seaborn
-stable-baselines3
-tensorboardX
-torch
-tqdm
-
-# Causes conflict with gym version 0.25.0
-#git+https://github.com/shengpu1126/spinningup.git@shengpu1126-patch-1#egg=spinup
-
-pytest
+h5py==3.7.0
+joblib==1.1.0
+matplotlib==3.5.2
+seaborn==0.11.2
+stable-baselines3==1.2.0
+tensorboardX==2.5.1
+torch==1.12.0
+tqdm>=4.64.0
+pytest==7.1.2

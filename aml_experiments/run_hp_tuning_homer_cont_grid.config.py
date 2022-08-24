@@ -33,12 +33,12 @@ script_run_config = ScriptRunConfig(
         "--input_dir", input_ref,
         "--output_dir", "./logs",
         "--num_epochs", "1000",
-        "--seed", "${{search_space.seed}}",
         "--batch_size", "64",
+        "--weight_decay", "0.0",
+        "--lr", "${{search_space.lr}}",
+        "--seed", "${{search_space.seed}}",
         "--latent_size", "${{search_space.latent_size}}",
         "--hidden_size", "${{search_space.hidden_size}}",
-        "--lr", "${{search_space.lr}}",
-        "--weight_decay", "0.0",
         "--temperature_decay", "${{search_space.temperature_decay}}",
     ],
     compute_target=compute_manager.create_compute_target(ws, "gpu-nc24"),
@@ -63,7 +63,7 @@ hyperdrive_config = HyperDriveConfig(
     policy=None,
     primary_metric_name='val_loss',
     primary_metric_goal=PrimaryMetricGoal.MINIMIZE,
-    max_total_runs=200,
+    max_total_runs=100,
     max_concurrent_runs=4
 )
 

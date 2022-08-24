@@ -10,12 +10,16 @@ conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch conda-f
 pip install -e .
 ```
 
-## Workflow
-- Collect data using OpenAI spinning up
-- Train HOMER
-- Run offline simulation with learners
+### Additional setup instructions
+To use the [spinup agents](https://github.com/microsoft/rl-offline-simulation/tree/main/offsim4rl/agents/spinup), please refer to the installation instructions of [Spinning UP](https://spinningup.openai.com/en/latest/user/installation.html#installing-spinning-up).
 
-## Contributing
+```console
+git clone https://github.com/openai/spinningup.git
+cd spinningup
+pip install -e .
+```
+
+## Contribut
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
 Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
