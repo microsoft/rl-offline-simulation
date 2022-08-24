@@ -11,11 +11,13 @@ setuptools.setup(
     version="0.1",
     url="https://www.github.com/microsoft/rl-offline-simulation",
     include_package_data=True,
+    # TODO: remove azureml_connector from here.
     packages=['offsim4rl', 'azureml_connector'],
     install_requires=[
+        # TODO: remove azureml dependencies from the core library. Currently they are needed by tb_utils.py.
         "azureml-core",
         "azureml-sdk",
-        "gym==0.21.0",
+        "gym",
         "h5py",
         "joblib",
         "matplotlib",
@@ -23,7 +25,9 @@ setuptools.setup(
         "stable-baselines3",
         "tensorboardX",
         "torch>=1.10",
-        "tqdm",
-        "spinup @ git+https://github.com/shengpu1126/spinningup.git@shengpu1126-patch-1#egg=spinup",
+        "tqdm"
     ],
+    extras_require={
+        'spinup': ["spinup @ git+https://github.com/shengpu1126/spinningup.git@shengpu1126-patch-1#egg=spinup"]
+    }
 )

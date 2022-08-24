@@ -11,6 +11,7 @@ import h5py
 import pickle
 from torch.utils.data import Dataset
 import torch
+import offsim4rl.core
 
 class ProbDistribution(enum.Enum):
     """ Type of probability distribution used describe action. """
@@ -106,10 +107,9 @@ class OfflineDataset:
         if experience['observations'].shape != experience['next_observations'].shape:
             raise ValueError(f'Shapes in observations and next_observations do not match')
 
-        all_keys = required_keys + ['action_distributions', 'episode_ids', 'steps']
-        for k in all_keys:
-            if k in experience and experience[k].shape[0] != experience['observations'].shape[0]:
-                raise ValueError(f'Length of {k} does not match length of observations')
+        for k in experience:
+            if len(experience[k]) != experience['observations'].shape[0]:
+                raise ValueError(f'Length of {k} ({len(experience[k])}) does not match length of observations ({experience["observations"].shape[0]})')
         
         if 'steps' not in experience:
             logging.warning('Missing steps in experience. Algorithms may need to assume all states can be initial states...')

@@ -68,8 +68,4 @@ if __name__ == "__main__":
     )
 
     # INFERENCE
-    x, y = np.meshgrid(np.arange(0, 1, 0.002), np.arange(0, 1, 0.002))
-    obs = torch.tensor(np.stack([x, y]).reshape((2, -1)).T, dtype=torch.float, device=homer_encoder.device)
-    emb = homer_encoder.encode(obs)
-    df_output = pd.DataFrame([(i, *x) for i, x in zip(emb, obs)], columns=['i', 'x', 'y'])
-    plot_latent_state_color_map(df_output, os.path.join(args.output_dir, model_dir, 'vis', 'latent_state.png'))
+    homer_encoder._visualize(fname='latent_state.png')
