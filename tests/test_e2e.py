@@ -33,7 +33,7 @@ def test_cartpole_simulation():
 
     num_states = 10
     homer_encoder = HOMEREncoder(
-        observation_dim=env.observation_space.shape[0],
+        obs_dim=env.observation_space.shape[0],
         action_dim=env.action_space.n,
         latent_size=num_states,
         hidden_size=16)
