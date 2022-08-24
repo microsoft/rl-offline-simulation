@@ -10,6 +10,7 @@ class PerStateRejectionSampling(RevealedRandomnessEnv):
         dataset: OfflineDataset,
         num_states=None,
         encoder=None,
+        new_step_api=False
     ):
 
         if not isinstance(dataset.observation_space, gym.spaces.Discrete) and num_states is None and encoder is None:
@@ -56,6 +57,8 @@ class PerStateRejectionSampling(RevealedRandomnessEnv):
         # Optional arguments - pass only if not None. Otherwise, use default arg values.
         if num_states is not None:
             kwargs['nS']=num_states
+        
+        self.new_step_api = new_step_api
 
         self._impl = PSRS(**kwargs)
     
@@ -82,6 +85,10 @@ class PerStateRejectionSampling(RevealedRandomnessEnv):
         if isinstance(action_dist, Distribution):
             action_dist = action_dist.probs
         next_obs, r, done, info = self._impl.step(action_dist)
+
+        # terminated, truncated
+        dones = [done, False] if self.new_step_api else [done]
+
         if next_obs is None:
-            return None, None, None, None, None
-        return info['a'], next_obs, r, done, info
+            return (None,) * (6 if self.new_step_api else 5)
+        return (info['a'], next_obs, r, *dones, info)
