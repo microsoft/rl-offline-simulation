@@ -88,6 +88,8 @@ def record_dataset_in_memory(
 
         if include_infos:
             if info_keys is None:
+                # To make sure the vectors of the same length and are well-aligned with the rest of the experience,
+                # only info keys that occur in the first step are being recorded.
                 info_keys = [k for k,v in info.items() if isinstance(v, info_supported_types)]
             
             for k in info_keys:
