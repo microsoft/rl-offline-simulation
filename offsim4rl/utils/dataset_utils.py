@@ -79,10 +79,15 @@ def record_dataset_in_memory(
             next_obs, reward, terminated, truncated, info = env.step(action)
 
         numpy_infos = {}
+        """
+        # TODO: this requires more thought... the environment may not return all info keys for every step.
+        #   How do we make sure that all info vectors are the same length as all other vectors and the info
+        #   values are aligned with the correct steps?
         for k,v in info.items():
             # is v numerical?
             if isinstance(v, (int, float, np.ndarray)):
                 numpy_infos[f"infos/{k}"] = v
+        """
 
         _append_buffer(
             buffer,
