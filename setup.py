@@ -1,4 +1,4 @@
-# setup.py: install script for aps_tools
+# setup.py: install script for offsim4rl
 """
 to install offsim4rl and its dependencies for development work,
 run this cmd from the root directory:
@@ -11,23 +11,18 @@ setuptools.setup(
     version="0.1",
     url="https://www.github.com/microsoft/rl-offline-simulation",
     include_package_data=True,
-    # TODO: remove azureml_connector from here.
-    packages=['offsim4rl', 'azureml_connector'],
+    packages=setuptools.find_packages(include=['offsim4rl']),
     install_requires=[
-        # TODO: remove azureml dependencies from the core library. Currently they are needed by tb_utils.py.
-        "azureml-core",
-        "azureml-sdk",
         "gym",
         "h5py",
         "joblib",
         "matplotlib",
         "seaborn",
-        "stable-baselines3",
         "tensorboardX",
         "torch>=1.10",
         "tqdm"
     ],
     extras_require={
-        'spinup': ["spinup @ git+https://github.com/shengpu1126/spinningup.git@shengpu1126-patch-1#egg=spinup"]
+        'sb3': ["stable-baselines3"]
     }
 )
