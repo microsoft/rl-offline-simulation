@@ -52,6 +52,7 @@ class PerStateRejectionSampling(RevealedRandomnessEnv):
         kwargs = {
             'buffer': legacy_tuples,
             'nA': dataset.action_space.n,
+            'reject_func': self._reject
         }
 
         # Optional arguments - pass only if not None. Otherwise, use default arg values.
