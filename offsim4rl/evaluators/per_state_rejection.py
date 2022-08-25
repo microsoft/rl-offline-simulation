@@ -92,3 +92,6 @@ class PerStateRejectionSampling(RevealedRandomnessEnv):
         if next_obs is None:
             return (None,) * (6 if self.new_step_api else 5)
         return (info['a'], next_obs, r, *dones, info)
+
+    def _reject(self, p_new, p_log, a) -> bool:
+        return self._impl._default_reject(p_new, p_log, a)

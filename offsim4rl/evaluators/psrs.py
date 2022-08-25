@@ -3,10 +3,11 @@ import copy, itertools
 
 class PSRS(object):
     # Rejection sampler that acts as an environment
-    def __init__(self, buffer, nS=25, nA=5):
+    def __init__(self, buffer, nS=25, nA=5, reject_func=None):
         self.raw_buffer = buffer # (s, a, r, s', done, p, info), where p is the logging policy's probability
         self.nS = nS
         self.nA = nA
+        self._reject_func = reject_func if reject_func is not None else self._default_reject
         self._calculate_latent_state() # self.buffer contains (z, s, a, r, z', s', done, p, info)
         self.reset_sampler()
         self.reset()
@@ -43,13 +44,15 @@ class PSRS(object):
                 return None, None, None, None
             _z, _s, a, r, z_next, s_next, done, p_log, info = self.queues[z].pop(0)
             assert z == _z
-            M = (p_new / p_log).max()
-            u = self.rejection_sampling_rng.random()
-            if u <= p_new[a] / p_log[a] / M:
-                reject = False
+            reject = self._reject_func(p_new, p_log, a)
         self.s = s_next
         self.z = z_next
         return s_next, r, done, {'z': z, 'a': a, 'p': p_log}
+
+    def _default_reject(self, p_new, p_log, a) -> bool:
+        M = (p_new / p_log).max()
+        u = self.rejection_sampling_rng.random()
+        return u > p_new[a] / p_log[a] / M
 
 class PSRS_Exo(object):
     # Rejection sampler that acts as an environment
