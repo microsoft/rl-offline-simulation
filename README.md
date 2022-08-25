@@ -14,8 +14,9 @@ pip install -e .
 To use the [spinup agents](https://github.com/microsoft/rl-offline-simulation/tree/main/offsim4rl/agents/spinup), please refer to the installation instructions of [Spinning UP](https://spinningup.openai.com/en/latest/user/installation.html#installing-spinning-up).
 
 ```console
-git clone https://github.com/openai/spinningup.git
+git clone https://github.com/shengpu1126/spinningup/
 cd spinningup
+git checkout shengpu1126-patch-1
 pip install -e .
 ```
 
