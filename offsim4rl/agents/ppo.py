@@ -89,7 +89,7 @@ class PPOAgent(AdaptiveAgent):
         self.obs = observation
         self.ep_ret = 0
         self.ep_len = 0
-        a, _, logp = self.model.step(torch.as_tensor(self.obs, dtype=torch.float32))
+        a, v, logp = self.model.step(torch.as_tensor(self.obs, dtype=torch.float32))
         return a, logp
 
     def commit_action(self, action):
@@ -99,14 +99,17 @@ class PPOAgent(AdaptiveAgent):
         a, v, logp = self.model.step(torch.as_tensor(self.obs, dtype=torch.float32))
         self.ep_ret += reward
         self.ep_len += 1
+
         self.buf.store(self.obs, a, reward, v, logp)
         self.logger.store(VVals=v)
 
         self.obs = next_observation
-        timeout = truncated or self.ep_len == self.max_ep_len
-        terminal = terminated or timeout
+        done = terminated or truncated
 
+        timeout = self.ep_len == self.max_ep_len
+        terminal = done or timeout
         epoch_ended = self.steps == self.local_steps_per_epoch - 1
+
         self.steps += 1
         if not terminal and not epoch_ended:
             return a, logp
@@ -219,25 +222,49 @@ class PPOAgent(AdaptiveAgent):
 
 
 if __name__ == '__main__':
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--env', type=str, default='HalfCheetah-v2')
+    parser.add_argument('--hid', type=int, default=64)
+    parser.add_argument('--l', type=int, default=2)
+    parser.add_argument('--gamma', type=float, default=0.99)
+    parser.add_argument('--seed', '-s', type=int, default=0)
+    parser.add_argument('--cpu', type=int, default=4)
+    parser.add_argument('--steps', type=int, default=4000)
+    parser.add_argument('--num_iter', type=int, default=50000)
+    parser.add_argument('--exp_name', type=str, default='ppo')
+    parser.add_argument('--output_dir', type=str, default='./outputs')
+
+    args = parser.parse_args()
+
     from spinup.utils.run_utils import setup_logger_kwargs
-    logger_kwargs = setup_logger_kwargs('CartPole-v1_ppo_new', 0, data_dir='./outputs')
+    logger_kwargs = setup_logger_kwargs(args.exp_name, 0, data_dir=args.output_dir)
     logger = EpochLogger(**logger_kwargs)
-    env = gym.make('CartPole-v1')
+    seed = args.seed
+    seed += 10000 * proc_id()
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    env = gym.make(args.env)
+    env.seed(seed)
     agent = PPOAgent(
         env.observation_space,
         env.action_space,
+        actor_critic=core.MLPActorCritic,
+        ac_kwargs=dict(hidden_sizes=[args.hid] * args.l),
         logger=logger,
-        seed=0,
+        gamma=args.gamma,
+        seed=seed,
+        steps_per_epoch=args.steps,
     )
 
     mpi_fork(1)  # run parallel code with mpi
-    num_interactions = 50000
-    obs, _ = env.reset()
+    num_interactions = args.num_iter
+    obs = env.reset()
     a, logp = agent.begin_episode(obs)
     for t in range(num_interactions):
-        obs, r, terminated, truncated, _ = env.step(a)
-        a, logp = agent.step(r, obs, terminated, truncated)
+        obs, r, done, _ = env.step(a)
+        a, logp = agent.step(r, obs, done, done)
 
-        if terminated or truncated:
-            obs, _ = env.reset()
+        if done:
+            obs = env.reset()
             a, logp = agent.begin_episode(obs)
