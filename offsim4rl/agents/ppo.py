@@ -10,11 +10,11 @@ import time
 import torch
 from torch.optim import Adam
 
-from offsim4rl.agents.agent import AdaptiveAgent
+from offsim4rl.agents.agent import Agent
 from offsim4rl.data import ProbDistribution
 
 
-class PPOAgent(AdaptiveAgent):
+class PPOAgent(Agent):
     def __init__(
         self,
         observation_space: gym.Space,
@@ -37,7 +37,9 @@ class PPOAgent(AdaptiveAgent):
         validate=False,
         val_kwargs=dict()
     ):
-        super().__init__(observation_space, action_space, actor_critic, ac_kwargs, seed)
+        self.action_space = action_space
+        self.observation_space = observation_space
+        self.seed = seed
 
         setup_pytorch_for_mpi()
         self.logger = logger
@@ -45,6 +47,7 @@ class PPOAgent(AdaptiveAgent):
 
         torch.manual_seed(self.seed)
         np.random.seed(self.seed)
+        self.ac = actor_critic(observation_space, action_space, **ac_kwargs)
 
         self.steps_per_epoch = steps_per_epoch
         self.gamma = gamma
@@ -60,22 +63,22 @@ class PPOAgent(AdaptiveAgent):
         self.act_dim = env.action_space.shape
 
         # Sync params across processes
-        sync_params(self.model)
+        sync_params(self.ac)
 
         # Count variables
-        var_counts = tuple(core.count_vars(module) for module in [self.model.pi, self.model.v])
-        self.logger.log('\nNumber of parameters: \t pi: %d, \t v: %d\n'%var_counts)
+        var_counts = tuple(core.count_vars(module) for module in [self.ac.pi, self.ac.v])
+        self.logger.log('\nNumber of parameters: \t pi: %d, \t v: %d\n' % var_counts)
 
         # Set up experience buffer
         self.local_steps_per_epoch = int(steps_per_epoch / num_procs())
         self.buf = PPOBuffer(self.obs_dim, self.act_dim, self.local_steps_per_epoch, gamma, lam)
 
         # Set up optimizers for policy and value function
-        self.pi_optimizer = Adam(self.model.pi.parameters(), lr=pi_lr)
-        self.vf_optimizer = Adam(self.model.v.parameters(), lr=vf_lr)
+        self.pi_optimizer = Adam(self.ac.pi.parameters(), lr=pi_lr)
+        self.vf_optimizer = Adam(self.ac.v.parameters(), lr=vf_lr)
 
         # Set up model saving
-        self.logger.setup_pytorch_saver(self.model)
+        self.logger.setup_pytorch_saver(self.ac)
 
         self.epochs = 0
         self.steps = 0
@@ -86,26 +89,30 @@ class PPOAgent(AdaptiveAgent):
         return ProbDistribution.Discrete
 
     def begin_episode(self, observation):
-        self.obs = observation
         self.ep_ret = 0
         self.ep_len = 0
-        a, v, logp = self.model.step(torch.as_tensor(self.obs, dtype=torch.float32))
+        a, v, logp = self.ac.step(torch.as_tensor(observation, dtype=torch.float32))
+        self.prev_interaction = (observation, a, v, logp)
         return a, logp
 
     def commit_action(self, action):
         pass
 
-    def step(self, reward, next_observation, terminated, truncated):
-        a, v, logp = self.model.step(torch.as_tensor(self.obs, dtype=torch.float32))
-        self.ep_ret += reward
+    def end_episode(self, reward):
+        pass
+
+    def step(self, prev_reward, observation, terminated, truncated):
+        self.ep_ret += prev_reward
         self.ep_len += 1
 
-        self.buf.store(self.obs, a, reward, v, logp)
-        self.logger.store(VVals=v)
+        prev_obs, prev_act, prev_v, prev_logp = self.prev_interaction
+        self.buf.store(prev_obs, prev_act, prev_reward, prev_v, prev_logp)
+        self.logger.store(VVals=prev_v)
 
-        self.obs = next_observation
+        a, v, logp = self.ac.step(torch.as_tensor(observation, dtype=torch.float32))
+        self.prev_interaction = (observation, a, v, logp)
+
         done = terminated or truncated
-
         timeout = self.ep_len == self.max_ep_len
         terminal = done or timeout
         epoch_ended = self.steps == self.local_steps_per_epoch - 1
@@ -116,11 +123,11 @@ class PPOAgent(AdaptiveAgent):
 
         # terminal or epoch_ended
         if epoch_ended and not terminal:
-            print('Warning: trajectory cut off by epoch at %d steps.'% self.ep_len, flush=True)
+            print('Warning: trajectory cut off by epoch at %d steps.' % self.ep_len, flush=True)
 
         # if trajectory didn't reach terminal state, bootstrap value target
         if timeout or epoch_ended:
-            _, v, _ = self.model.step(torch.as_tensor(self.obs, dtype=torch.float32))
+            _, v, _ = self.ac.step(torch.as_tensor(observation, dtype=torch.float32))
         else:
             v = 0
         self.buf.finish_path(v)
@@ -173,7 +180,7 @@ class PPOAgent(AdaptiveAgent):
                 self.logger.log('Early stopping at step %d due to reaching max kl.'%i)
                 break
             loss_pi.backward()
-            mpi_avg_grads(self.model.pi)    # average grads across MPI processes
+            mpi_avg_grads(self.ac.pi)    # average grads across MPI processes
             self.pi_optimizer.step()
 
         self.logger.store(StopIter=i)
@@ -183,7 +190,7 @@ class PPOAgent(AdaptiveAgent):
             self.vf_optimizer.zero_grad()
             loss_v = self._compute_loss_v(transitions)
             loss_v.backward()
-            mpi_avg_grads(self.model.v)    # average grads across MPI processes
+            mpi_avg_grads(self.ac.v)    # average grads across MPI processes
             self.vf_optimizer.step()
 
         # Log changes from update
@@ -202,7 +209,7 @@ class PPOAgent(AdaptiveAgent):
         obs, act, adv, logp_old = transitions["obs"], transitions["act"], transitions["adv"], transitions["logp"]
 
         # Policy loss
-        pi, logp = self.model.pi(obs, act)
+        pi, logp = self.ac.pi(obs, act)
         ratio = torch.exp(logp - logp_old)
         clip_adv = torch.clamp(ratio, 1 - self.clip_ratio, 1 + self.clip_ratio) * adv
         loss_pi = -(torch.min(ratio * adv, clip_adv)).mean()
@@ -218,7 +225,7 @@ class PPOAgent(AdaptiveAgent):
 
     def _compute_loss_v(self, transitions):
         obs, ret = transitions['obs'], transitions['ret']
-        return ((self.model.v(obs) - ret) ** 2).mean()
+        return ((self.ac.v(obs) - ret) ** 2).mean()
 
 
 if __name__ == '__main__':
