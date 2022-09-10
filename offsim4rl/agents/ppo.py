@@ -59,8 +59,8 @@ class PPOAgent(Agent):
         self.target_kl = target_kl
         self.save_freq = save_freq
 
-        self.obs_dim = env.observation_space.shape
-        self.act_dim = env.action_space.shape
+        self.obs_dim = observation_space.shape
+        self.act_dim = action_space.shape
 
         # Sync params across processes
         sync_params(self.ac)
@@ -83,6 +83,23 @@ class PPOAgent(Agent):
         self.epochs = 0
         self.steps = 0
         self.start_time = time.time()
+
+        self.log_metrics = set([
+                'Epoch',
+                'EpRet',
+                'EpLen',
+                'VVals',
+                'TotalEnvInteracts',
+                'LossPi',
+                'LossV',
+                'DeltaLossPi',
+                'DeltaLossV',
+                'Entropy',
+                'KL',
+                'ClipFrac',
+                'StopIter',
+                'Time',
+        ])
 
     @property
     def action_dist_type(self):
@@ -139,6 +156,9 @@ class PPOAgent(Agent):
         if epoch_ended:
             self.adapt()
 
+            for metric in self.log_metrics.difference(self.logger.epoch_dict.keys()):
+                self.logger.store(**{f'{metric}': None})
+
             # Log info about epoch
             self.logger.log_tabular('Epoch', self.epochs)
             self.logger.log_tabular('EpRet', with_min_and_max=True)
@@ -155,11 +175,11 @@ class PPOAgent(Agent):
             self.logger.log_tabular('StopIter', average_only=True)
             self.logger.log_tabular('Time', time.time() - self.start_time)
             self.logger.dump_tabular()
-            self.epochs += 1
 
             if (self.epochs % self.save_freq == 0):
-                logger.save_state({}, self.epochs)
+                self.logger.save_state({}, self.epochs)
 
+            self.epochs += 1
             self.steps = 0
 
         return a, logp
@@ -249,10 +269,7 @@ if __name__ == '__main__':
     logger = EpochLogger(**logger_kwargs)
     seed = args.seed
     seed += 10000 * proc_id()
-    torch.manual_seed(seed)
-    np.random.seed(seed)
     env = gym.make(args.env)
-    env.seed(seed)
     agent = PPOAgent(
         env.observation_space,
         env.action_space,
@@ -264,14 +281,15 @@ if __name__ == '__main__':
         steps_per_epoch=args.steps,
     )
 
-    mpi_fork(1)  # run parallel code with mpi
+    mpi_fork(args.cpu)  # run parallel code with mpi
     num_interactions = args.num_iter
-    obs = env.reset()
+    obs, _ = env.reset(seed=seed)
     a, logp = agent.begin_episode(obs)
     for t in range(num_interactions):
-        obs, r, done, _ = env.step(a)
-        a, logp = agent.step(r, obs, done, done)
+        obs, r, terminated, truncated, _ = env.step(a)
+        a, logp = agent.step(r, obs, terminated, truncated)
 
-        if done:
-            obs = env.reset()
+        if terminated or truncated:
+            agent.end_episode(r)
+            obs, _ = env.reset(seed=seed)
             a, logp = agent.begin_episode(obs)
