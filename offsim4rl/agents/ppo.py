@@ -87,20 +87,20 @@ class PPOAgent(Agent):
         self.start_time = time.time()
 
         self.log_metrics = set([
-                'Epoch',
-                'EpRet',
-                'EpLen',
-                'VVals',
-                'TotalEnvInteracts',
-                'LossPi',
-                'LossV',
-                'DeltaLossPi',
-                'DeltaLossV',
-                'Entropy',
-                'KL',
-                'ClipFrac',
-                'StopIter',
-                'Time',
+            'Epoch',
+            'EpRet',
+            'EpLen',
+            'VVals',
+            'TotalEnvInteracts',
+            'LossPi',
+            'LossV',
+            'DeltaLossPi',
+            'DeltaLossV',
+            'Entropy',
+            'KL',
+            'ClipFrac',
+            'StopIter',
+            'Time',
         ])
 
     @property
@@ -199,7 +199,7 @@ class PPOAgent(Agent):
             loss_pi, pi_info = self._compute_loss_pi(transitions)
             kl = mpi_avg(pi_info['kl'])
             if kl > 1.5 * self.target_kl:
-                self.logger.log('Early stopping at step %d due to reaching max kl.'%i)
+                self.logger.log('Early stopping at step %d due to reaching max kl.' % i)
                 break
             loss_pi.backward()
             mpi_avg_grads(self.ac.pi)    # average grads across MPI processes
