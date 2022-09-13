@@ -86,7 +86,7 @@ class PPOAgent(Agent):
         self.steps = 0
         self.start_time = time.time()
 
-        self.log_metrics = set([
+        self.metrics_keys = set([
             'Epoch',
             'EpRet',
             'EpLen',
@@ -157,30 +157,7 @@ class PPOAgent(Agent):
 
         if epoch_ended:
             self.adapt()
-
-            for metric in self.log_metrics.difference(self.logger.epoch_dict.keys()):
-                self.logger.store(**{f'{metric}': None})
-
-            # Log info about epoch
-            self.logger.log_tabular('Epoch', self.epochs)
-            self.logger.log_tabular('EpRet', with_min_and_max=True)
-            self.logger.log_tabular('EpLen', average_only=True)
-            self.logger.log_tabular('VVals', with_min_and_max=True)
-            self.logger.log_tabular('TotalEnvInteracts', (self.epochs + 1) * self.steps_per_epoch)
-            self.logger.log_tabular('LossPi', average_only=True)
-            self.logger.log_tabular('LossV', average_only=True)
-            self.logger.log_tabular('DeltaLossPi', average_only=True)
-            self.logger.log_tabular('DeltaLossV', average_only=True)
-            self.logger.log_tabular('Entropy', average_only=True)
-            self.logger.log_tabular('KL', average_only=True)
-            self.logger.log_tabular('ClipFrac', average_only=True)
-            self.logger.log_tabular('StopIter', average_only=True)
-            self.logger.log_tabular('Time', time.time() - self.start_time)
-            self.logger.dump_tabular()
-
-            if (self.epochs % self.save_freq == 0):
-                self.logger.save_state({}, self.epochs)
-
+            self._log_metrics()
             self.epochs += 1
             self.steps = 0
 
@@ -248,3 +225,109 @@ class PPOAgent(Agent):
     def _compute_loss_v(self, transitions):
         obs, ret = transitions['obs'], transitions['ret']
         return ((self.ac.v(obs) - ret) ** 2).mean()
+
+    def _log_metrics(self):
+        for metric in self.metrics_keys.difference(self.logger.epoch_dict.keys()):
+            self.logger.store(**{f'{metric}': None})
+
+        # Log info about epoch
+        self.logger.log_tabular('Epoch', self.epochs)
+        self.logger.log_tabular('EpRet', with_min_and_max=True)
+        self.logger.log_tabular('EpLen', average_only=True)
+        self.logger.log_tabular('VVals', with_min_and_max=True)
+        self.logger.log_tabular('TotalEnvInteracts', (self.epochs + 1) * self.steps_per_epoch)
+        self.logger.log_tabular('LossPi', average_only=True)
+        self.logger.log_tabular('LossV', average_only=True)
+        self.logger.log_tabular('DeltaLossPi', average_only=True)
+        self.logger.log_tabular('DeltaLossV', average_only=True)
+        self.logger.log_tabular('Entropy', average_only=True)
+        self.logger.log_tabular('KL', average_only=True)
+        self.logger.log_tabular('ClipFrac', average_only=True)
+        self.logger.log_tabular('StopIter', average_only=True)
+        self.logger.log_tabular('Time', time.time() - self.start_time)
+        self.logger.dump_tabular()
+
+        if (self.epochs % self.save_freq == 0):
+            self.logger.save_state({}, self.epochs)
+
+
+class MLPActorCriticRevealed(core.MLPActorCritic):
+    def step(self, obs):
+        with torch.no_grad():
+            pi = self.pi._distribution(obs)
+            v = self.v(obs)
+        return pi, v.numpy()
+
+    def get_logp(self, pi, a):
+        logp_a = self.pi._log_prob_from_distribution(pi, torch.as_tensor(a))
+        return logp_a
+
+
+class PPOAgentRevealed(PPOAgent):
+    def __init__(
+        self,
+        *args,
+        actor_critic=MLPActorCriticRevealed,
+        **kwargs,
+    ):
+        super(PPOAgentRevealed, self).__init__(
+            *args,
+            actor_critic=actor_critic,
+            **kwargs
+        )
+
+    def begin_episode(self, observation):
+        self.ep_ret = 0
+        self.ep_len = 0
+        pi, v = self.ac.step(torch.as_tensor(observation, dtype=torch.float32))
+        a = None
+        logp = None
+        self.prev_interaction = (observation, pi, a, v, logp)
+        return pi
+
+    def commit_action(self, action):
+        o, pi, _, v, _ = self.prev_interaction
+        self.prev_interaction = (o, pi, action, v, self.ac.get_logp(pi, action))
+
+    def step(self, prev_reward, observation, terminated, truncated):
+        self.ep_ret += prev_reward
+        self.ep_len += 1
+
+        prev_obs, _, prev_act, prev_v, prev_logp = self.prev_interaction
+        self.buf.store(prev_obs, prev_act, prev_reward, prev_v, prev_logp)
+        self.logger.store(VVals=prev_v)
+
+        pi, v = self.ac.step(torch.as_tensor(observation, dtype=torch.float32))
+        self.prev_interaction = (observation, pi, None, v, None)
+
+        done = terminated or truncated
+        timeout = self.ep_len == self.max_ep_len
+        terminal = done or timeout
+        epoch_ended = self.steps == self.local_steps_per_epoch - 1
+
+        self.steps += 1
+        if not terminal and not epoch_ended:
+            return pi
+
+        # terminal or epoch_ended
+        if epoch_ended and not terminal:
+            print('Warning: trajectory cut off by epoch at %d steps.' % self.ep_len, flush=True)
+
+        # if trajectory didn't reach terminal state, bootstrap value target
+        if timeout or epoch_ended:
+            _, v = self.ac.step(torch.as_tensor(observation, dtype=torch.float32))
+        else:
+            v = 0
+        self.buf.finish_path(v)
+
+        if terminal:
+            # only save EpRet / EpLen if trajectory finished
+            self.logger.store(EpRet=self.ep_ret, EpLen=self.ep_len)
+
+        if epoch_ended:
+            self.adapt()
+            self._log_metrics()
+            self.epochs += 1
+            self.steps = 0
+
+        return pi
