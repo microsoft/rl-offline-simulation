@@ -42,17 +42,17 @@ def main():
     num_interactions = args.num_iter
 
     obs, _ = env.reset(seed=args.seed)
-    terminated, truncated = False, False
-    rew = None
+    action_dist = agent.begin_episode(obs)
     for t in range(num_interactions):
-        action_dist = agent.begin_episode(obs) if t == 0 else agent.step(rew, obs, terminated, truncated)
-        a = action_dist.sample().numpy()
+        a = sample_dist(action_dist)
         agent.commit_action(a)
         obs, rew, terminated, truncated, _ = env.step(a)
+        agent.step(rew, obs, terminated, truncated)
 
         if terminated or truncated:
             agent.end_episode(rew)
             obs, _ = env.reset(seed=args.seed)
+            action_dist = agent.begin_episode(obs)
 
 
 if __name__ == "__main__":

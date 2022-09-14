@@ -286,6 +286,7 @@ class PPOAgentRevealed(PPOAgent):
         return pi
 
     def commit_action(self, action):
+        action = torch.as_tensor(action)
         o, pi, _, v, _ = self.prev_interaction
         self.prev_interaction = (o, pi, action, v, self.ac.get_logp(pi, action))
 
