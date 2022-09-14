@@ -1,5 +1,6 @@
 # Collect data for cartpole useing ppo agent
 import argparse
+import uuid
 
 import gym
 from spinup.utils.logx import EpochLogger
@@ -24,7 +25,7 @@ def main():
 
     args = parser.parse_args()
 
-    logger_kwargs = setup_logger_kwargs(args.exp_name, 0, data_dir=args.output_dir)
+    logger_kwargs = setup_logger_kwargs(args.exp_name + str(uuid.uuid4()), 0, data_dir=args.output_dir)
     logger = EpochLogger(**logger_kwargs)
 
     env = gym.make(args.env)
@@ -47,7 +48,7 @@ def main():
         a = sample_dist(action_dist)
         agent.commit_action(a)
         obs, rew, terminated, truncated, _ = env.step(a)
-        agent.step(rew, obs, terminated, truncated)
+        action_dist = agent.step(rew, obs, terminated, truncated)
 
         if terminated or truncated:
             agent.end_episode(rew)

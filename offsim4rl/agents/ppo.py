@@ -31,7 +31,7 @@ class PPOAgent(Agent):
         train_pi_iters=80,
         train_v_iters=80,
         lam=0.97,
-        max_ep_len=1000,
+        max_ep_len=500,
         target_kl=0.01,
         save_freq=10,
         validate=False,
@@ -286,9 +286,8 @@ class PPOAgentRevealed(PPOAgent):
         return pi
 
     def commit_action(self, action):
-        action = torch.as_tensor(action)
         o, pi, _, v, _ = self.prev_interaction
-        self.prev_interaction = (o, pi, action, v, self.ac.get_logp(pi, action))
+        self.prev_interaction = (o, pi, action, v, self.ac.get_logp(pi, action).numpy())
 
     def step(self, prev_reward, observation, terminated, truncated):
         self.ep_ret += prev_reward
