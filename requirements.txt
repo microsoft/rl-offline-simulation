@@ -1,5 +1,6 @@
 # We recommend gym version 0.25.0 or above, which supports the new step API (with "terminated" and "truncated").
-gym[classic_control]>=0.25.0
+# Version 0.26.0 seems to be broken when you pass 'new_step_api' to Cartpole though, so fixing to 0.25.0 for now.
+gym[classic_control]==0.25.0
 
 h5py==3.7.0
 joblib==1.1.0
@@ -10,3 +11,5 @@ tensorboardX==2.5.1
 torch==1.12.0
 tqdm>=4.64.0
 pytest==7.1.2
+
+-e git+https://github.com/sebastko/spinningup-simple-install.git#egg=spinup
