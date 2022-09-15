@@ -31,11 +31,8 @@ class PPOAgent(Agent):
         train_pi_iters=80,
         train_v_iters=80,
         lam=0.97,
-        max_ep_len=500,
         target_kl=0.01,
         save_freq=10,
-        validate=False,
-        val_kwargs=dict()
     ):
         self.action_space = action_space
         self.observation_space = observation_space
@@ -57,7 +54,6 @@ class PPOAgent(Agent):
         self.train_pi_iters = train_pi_iters
         self.train_v_iters = train_v_iters
         self.lam = lam
-        self.max_ep_len = max_ep_len
         self.target_kl = target_kl
         self.save_freq = save_freq
 
@@ -84,24 +80,8 @@ class PPOAgent(Agent):
 
         self.epochs = 0
         self.steps = 0
+        self.episodes = 0
         self.start_time = time.time()
-
-        self.metrics_keys = set([
-            'Epoch',
-            'EpRet',
-            'EpLen',
-            'VVals',
-            'TotalEnvInteracts',
-            'LossPi',
-            'LossV',
-            'DeltaLossPi',
-            'DeltaLossV',
-            'Entropy',
-            'KL',
-            'ClipFrac',
-            'StopIter',
-            'Time',
-        ])
 
     @property
     def action_dist_type(self):
@@ -117,10 +97,30 @@ class PPOAgent(Agent):
     def commit_action(self, action):
         pass
 
-    def end_episode(self, reward):
-        pass
+    def end_episode(self, prev_reward, truncated=False):
+        self.ep_ret += prev_reward
+        prev_obs, prev_act, prev_v, prev_logp = self.prev_interaction
+        self.buf.store(prev_obs, prev_act, prev_reward, prev_v, prev_logp)
+        self.logger.store(VVals=prev_v)
 
-    def step(self, prev_reward, observation, terminated, truncated):
+        terminated = not truncated
+        epoch_ended = self.steps == self.local_steps_per_epoch - 1
+        self.steps += 1
+        self.episodes += 1
+
+        # if trajectory didn't reach terminal state, bootstrap value target
+        if truncated or epoch_ended:
+            v = prev_v
+        else:
+            v = 0
+        self.buf.finish_path(v)
+
+        self.logger.store(EpRet=self.ep_ret, EpLen=self.ep_len)
+
+        if epoch_ended:
+            self._on_epoch_end()
+
+    def step(self, prev_reward, observation):
         self.ep_ret += prev_reward
         self.ep_len += 1
 
@@ -131,35 +131,20 @@ class PPOAgent(Agent):
         a, v, logp = self.ac.step(torch.as_tensor(observation, dtype=torch.float32))
         self.prev_interaction = (observation, a, v, logp)
 
-        done = terminated or truncated
-        timeout = self.ep_len == self.max_ep_len
-        terminal = done or timeout
         epoch_ended = self.steps == self.local_steps_per_epoch - 1
-
         self.steps += 1
-        if not terminal and not epoch_ended:
+        if not epoch_ended:
             return a, logp
 
-        # terminal or epoch_ended
-        if epoch_ended and not terminal:
-            print('Warning: trajectory cut off by epoch at %d steps.' % self.ep_len, flush=True)
+        # epoch_ended
+        print('Warning: trajectory cut off by epoch at %d steps.' % self.ep_len, flush=True)
 
-        # if trajectory didn't reach terminal state, bootstrap value target
-        if timeout or epoch_ended:
-            _, v, _ = self.ac.step(torch.as_tensor(observation, dtype=torch.float32))
-        else:
-            v = 0
+        # the trajectory didn't reach terminal state, bootstrap value target
+        _, v, _ = self.ac.step(torch.as_tensor(observation, dtype=torch.float32))
         self.buf.finish_path(v)
 
-        if terminal:
-            # only save EpRet / EpLen if trajectory finished
-            self.logger.store(EpRet=self.ep_ret, EpLen=self.ep_len)
-
         if epoch_ended:
-            self.adapt()
-            self._log_metrics()
-            self.epochs += 1
-            self.steps = 0
+            self._on_epoch_end()
 
         return a, logp
 
@@ -226,12 +211,13 @@ class PPOAgent(Agent):
         obs, ret = transitions['obs'], transitions['ret']
         return ((self.ac.v(obs) - ret) ** 2).mean()
 
-    def _log_metrics(self):
-        for metric in self.metrics_keys.difference(self.logger.epoch_dict.keys()):
-            self.logger.store(**{f'{metric}': None})
+    def _log_epoch_metrics(self):
+        if not self.logger.epoch_dict['EpRet']:
+            self.logger.store(EpRet=self.ep_ret, EpLen=self.ep_len)
 
         # Log info about epoch
         self.logger.log_tabular('Epoch', self.epochs)
+        self.logger.log_tabular('EpisodesInEpoch', self.episodes)
         self.logger.log_tabular('EpRet', with_min_and_max=True)
         self.logger.log_tabular('EpLen', average_only=True)
         self.logger.log_tabular('VVals', with_min_and_max=True)
@@ -249,6 +235,13 @@ class PPOAgent(Agent):
 
         if (self.epochs % self.save_freq == 0):
             self.logger.save_state({}, self.epochs)
+
+    def _on_epoch_end(self):
+        self.adapt()
+        self._log_epoch_metrics()
+        self.epochs += 1
+        self.steps = 0
+        self.episodes = 0
 
 
 class MLPActorCriticRevealed(core.MLPActorCritic):

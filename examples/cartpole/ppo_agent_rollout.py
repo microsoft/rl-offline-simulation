@@ -43,10 +43,10 @@ def main():
     a, logp = agent.begin_episode(obs)
     for t in range(num_interactions):
         obs, r, terminated, truncated, _ = env.step(a)
-        a, logp = agent.step(r, obs, terminated, truncated)
+        a, logp = agent.step(r, obs)
 
         if terminated or truncated:
-            agent.end_episode(r)
+            agent.end_episode(r, truncated=truncated)
             obs, _ = env.reset(seed=args.seed)
             a, logp = agent.begin_episode(obs)
 
