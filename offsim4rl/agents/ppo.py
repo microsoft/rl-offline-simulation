@@ -1,3 +1,4 @@
+from cmath import isnan
 import gym
 import numpy as np
 from spinup.algos.pytorch.ppo import core
@@ -14,12 +15,24 @@ from offsim4rl.agents.agent import Agent
 from offsim4rl.data import ProbDistribution
 
 
-class PPOAgent(Agent):
+class MLPActorCriticRevealed(core.MLPActorCritic):
+    def step(self, obs):
+        with torch.no_grad():
+            pi = self.pi._distribution(obs)
+            v = self.v(obs)
+        return pi, v.numpy()
+
+    def get_logp(self, pi, a):
+        logp_a = self.pi._log_prob_from_distribution(pi, torch.as_tensor(a))
+        return logp_a
+
+
+class PPOAgentRevealed(Agent):
     def __init__(
         self,
         observation_space: gym.Space,
         action_space: gym.Space,
-        actor_critic=core.MLPActorCritic,
+        actor_critic=MLPActorCriticRevealed,
         ac_kwargs=dict(),
         logger=EpochLogger(),
         seed=0,
@@ -90,20 +103,22 @@ class PPOAgent(Agent):
     def begin_episode(self, observation):
         self.ep_ret = 0
         self.ep_len = 0
-        a, v, logp = self.ac.step(torch.as_tensor(observation, dtype=torch.float32))
-        self.prev_interaction = (observation, a, v, logp)
-        return a, logp
+        pi, v = self.ac.step(torch.as_tensor(observation, dtype=torch.float32))
+        a = None
+        logp = None
+        self.prev_interaction = (observation, pi, a, v, logp)
+        return pi
 
     def commit_action(self, action):
-        pass
+        o, pi, _, v, _ = self.prev_interaction
+        self.prev_interaction = (o, pi, action, v, self.ac.get_logp(pi, action).numpy())
 
     def end_episode(self, prev_reward, truncated=False):
         self.ep_ret += prev_reward
-        prev_obs, prev_act, prev_v, prev_logp = self.prev_interaction
+        prev_obs, _, prev_act, prev_v, prev_logp = self.prev_interaction
         self.buf.store(prev_obs, prev_act, prev_reward, prev_v, prev_logp)
         self.logger.store(VVals=prev_v)
 
-        terminated = not truncated
         epoch_ended = self.steps == self.local_steps_per_epoch - 1
         self.steps += 1
         self.episodes += 1
@@ -124,29 +139,25 @@ class PPOAgent(Agent):
         self.ep_ret += prev_reward
         self.ep_len += 1
 
-        prev_obs, prev_act, prev_v, prev_logp = self.prev_interaction
+        prev_obs, _, prev_act, prev_v, prev_logp = self.prev_interaction
         self.buf.store(prev_obs, prev_act, prev_reward, prev_v, prev_logp)
         self.logger.store(VVals=prev_v)
 
-        a, v, logp = self.ac.step(torch.as_tensor(observation, dtype=torch.float32))
-        self.prev_interaction = (observation, a, v, logp)
+        pi, v = self.ac.step(torch.as_tensor(observation, dtype=torch.float32))
+        self.prev_interaction = (observation, pi, None, v, None)
 
         epoch_ended = self.steps == self.local_steps_per_epoch - 1
         self.steps += 1
         if not epoch_ended:
-            return a, logp
+            return pi
 
         # epoch_ended
-        print('Warning: trajectory cut off by epoch at %d steps.' % self.ep_len, flush=True)
-
-        # the trajectory didn't reach terminal state, bootstrap value target
-        _, v, _ = self.ac.step(torch.as_tensor(observation, dtype=torch.float32))
+        print('Warning: trajectory cut off by epoch at %d steps.' % self.ep_len, flush=True)        
+        _, v = self.ac.step(torch.as_tensor(observation, dtype=torch.float32))
         self.buf.finish_path(v)
+        self._on_epoch_end()
 
-        if epoch_ended:
-            self._on_epoch_end()
-
-        return a, logp
+        return pi
 
     def adapt(self):
         transitions = self.buf.get()
@@ -244,83 +255,25 @@ class PPOAgent(Agent):
         self.episodes = 0
 
 
-class MLPActorCriticRevealed(core.MLPActorCritic):
-    def step(self, obs):
-        with torch.no_grad():
-            pi = self.pi._distribution(obs)
-            v = self.v(obs)
-        return pi, v.numpy()
-
-    def get_logp(self, pi, a):
-        logp_a = self.pi._log_prob_from_distribution(pi, torch.as_tensor(a))
-        return logp_a
-
-
-class PPOAgentRevealed(PPOAgent):
+class PPOAgent(PPOAgentRevealed):
     def __init__(
         self,
         *args,
-        actor_critic=MLPActorCriticRevealed,
         **kwargs,
     ):
-        super(PPOAgentRevealed, self).__init__(
+        super(PPOAgent, self).__init__(
             *args,
-            actor_critic=actor_critic,
             **kwargs
         )
 
     def begin_episode(self, observation):
-        self.ep_ret = 0
-        self.ep_len = 0
-        pi, v = self.ac.step(torch.as_tensor(observation, dtype=torch.float32))
-        a = None
-        logp = None
-        self.prev_interaction = (observation, pi, a, v, logp)
-        return pi
+        pi = super(PPOAgent, self).begin_episode(observation)
+        a = pi.sample().numpy()
+        self.commit_action(a)
+        return a
 
-    def commit_action(self, action):
-        o, pi, _, v, _ = self.prev_interaction
-        self.prev_interaction = (o, pi, action, v, self.ac.get_logp(pi, action).numpy())
-
-    def step(self, prev_reward, observation, terminated, truncated):
-        self.ep_ret += prev_reward
-        self.ep_len += 1
-
-        prev_obs, _, prev_act, prev_v, prev_logp = self.prev_interaction
-        self.buf.store(prev_obs, prev_act, prev_reward, prev_v, prev_logp)
-        self.logger.store(VVals=prev_v)
-
-        pi, v = self.ac.step(torch.as_tensor(observation, dtype=torch.float32))
-        self.prev_interaction = (observation, pi, None, v, None)
-
-        done = terminated or truncated
-        timeout = self.ep_len == self.max_ep_len
-        terminal = done or timeout
-        epoch_ended = self.steps == self.local_steps_per_epoch - 1
-
-        self.steps += 1
-        if not terminal and not epoch_ended:
-            return pi
-
-        # terminal or epoch_ended
-        if epoch_ended and not terminal:
-            print('Warning: trajectory cut off by epoch at %d steps.' % self.ep_len, flush=True)
-
-        # if trajectory didn't reach terminal state, bootstrap value target
-        if timeout or epoch_ended:
-            _, v = self.ac.step(torch.as_tensor(observation, dtype=torch.float32))
-        else:
-            v = 0
-        self.buf.finish_path(v)
-
-        if terminal:
-            # only save EpRet / EpLen if trajectory finished
-            self.logger.store(EpRet=self.ep_ret, EpLen=self.ep_len)
-
-        if epoch_ended:
-            self.adapt()
-            self._log_metrics()
-            self.epochs += 1
-            self.steps = 0
-
-        return pi
+    def step(self, prev_reward, observation):
+        pi = super(PPOAgent, self).step(prev_reward, observation)
+        a = pi.sample().numpy()
+        self.commit_action(a)
+        return a

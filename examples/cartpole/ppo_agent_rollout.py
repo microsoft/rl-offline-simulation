@@ -40,15 +40,16 @@ def main():
     mpi_fork(args.cpu)  # run parallel code with mpi
     num_interactions = args.num_iter
     obs, _ = env.reset(seed=args.seed)
-    a, logp = agent.begin_episode(obs)
+    a = agent.begin_episode(obs)
     for t in range(num_interactions):
         obs, r, terminated, truncated, _ = env.step(a)
-        a, logp = agent.step(r, obs)
+        a = agent.step(r, obs)
 
         if terminated or truncated:
+            agent.commit_action(a)
             agent.end_episode(r, truncated=truncated)
             obs, _ = env.reset(seed=args.seed)
-            a, logp = agent.begin_episode(obs)
+            a = agent.begin_episode(obs)
 
 
 if __name__ == "__main__":
