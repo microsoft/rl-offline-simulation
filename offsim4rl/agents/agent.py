@@ -1,5 +1,8 @@
 import abc
 
+import gym
+
+
 class Agent(abc.ABC):
     @abc.abstractproperty
     def action_dist_type(self):
@@ -14,9 +17,9 @@ class Agent(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def step(self, reward, observation):
+    def step(self, prev_reward, observation):
         pass
 
     @abc.abstractmethod
-    def end_episode(self, reward):
+    def end_episode(self, reward, truncated=False):
         pass

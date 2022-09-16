@@ -22,6 +22,6 @@ def sample_dist(prob_dist: Union[np.ndarray, dist.Distribution]):
     if isinstance(prob_dist, np.ndarray):
         return np.random.choice(len(prob_dist), p=prob_dist)
     elif isinstance(prob_dist, dist.Distribution):
-        return prob_dist.sample()
+        return prob_dist.sample().numpy()
     else:
         raise NotImplementedError(f'Unsupported prob_dist: {prob_dist}')
