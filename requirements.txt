@@ -1,5 +1,6 @@
 # We recommend gym version 0.25.0 or above, which supports the new step API (with "terminated" and "truncated").
-gym[classic_control]>=0.25.0
+# Version 0.26.0 seems to have a bug, so fixing version to 0.25.0 for now.
+gym[classic_control]==0.25.0
 
 h5py==3.7.0
 joblib==1.1.0
