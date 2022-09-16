@@ -107,7 +107,7 @@ class PPOAgentRevealed(Agent):
         a = None
         logp = None
         self.prev_interaction = (observation, pi, a, v, logp)
-        return pi
+        return pi.probs.numpy()
 
     def commit_action(self, action):
         o, pi, _, v, _ = self.prev_interaction
@@ -149,7 +149,7 @@ class PPOAgentRevealed(Agent):
         epoch_ended = self.steps == self.local_steps_per_epoch - 1
         self.steps += 1
         if not epoch_ended:
-            return pi
+            return pi.probs.numpy()
 
         # epoch_ended
         print('Warning: trajectory cut off by epoch at %d steps.' % self.ep_len, flush=True)        
@@ -157,7 +157,7 @@ class PPOAgentRevealed(Agent):
         self.buf.finish_path(v)
         self._on_epoch_end()
 
-        return pi
+        return pi.probs.numpy()
 
     def adapt(self):
         transitions = self.buf.get()
