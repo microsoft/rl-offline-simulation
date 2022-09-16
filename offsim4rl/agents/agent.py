@@ -21,5 +21,5 @@ class Agent(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def end_episode(self, reward):
+    def end_episode(self, reward, truncated=False):
         pass
