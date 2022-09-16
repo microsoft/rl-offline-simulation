@@ -74,7 +74,8 @@ def record_dataset_in_memory(
         step_result = env.step(action)
 
         if len(step_result) == 4:
-            # Old gym API. Discouraged, since it may incorrectly mark regular states as terminal states, due to episode truncation.
+            # Old gym API. Discouraged, since it may incorrectly mark regular states 
+            # terminal states, due to episode truncation.
             if new_step_api:                
                 raise ValueError("new_step_api is enabled, but the environment seems return just 'done' instead of 'terminated' and 'truncated'. Use different environment or set new_step_api to False.")
             next_obs, reward, done, info = step_result
