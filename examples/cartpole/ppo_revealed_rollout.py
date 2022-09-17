@@ -4,12 +4,11 @@ import os
 
 import gym
 from spinup.utils.logx import EpochLogger
-from spinup.utils.mpi_tools import mpi_fork, proc_id
+from spinup.utils.mpi_tools import mpi_fork
 from spinup.utils.run_utils import setup_logger_kwargs
 
-from offsim4rl.agents.ppo import PPOAgent, PPOAgentRevealed
+from offsim4rl.agents.ppo import PPOAgentRevealed
 from offsim4rl.utils.dataset_utils import record_dataset_in_memory
-from offsim4rl.data import OfflineDataset
 
 def main(args):
     logger_kwargs = setup_logger_kwargs(args.exp_name, 0, data_dir=args.output_dir)
@@ -29,7 +28,7 @@ def main(args):
         steps_per_epoch=args.steps,
     )
 
-    # mpi_fork(args.cpu)  # run parallel code with mpi
+    mpi_fork(args.cpu)  # run parallel code with mpi
 
     dataset = record_dataset_in_memory(
         env,
