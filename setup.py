@@ -25,7 +25,7 @@ setuptools.setup(
     extras_require={
         'agents': [
             # Forked version of the spinup library, with simplified dependencies.
-            "git+https://github.com/sebastko/spinningup-simple-install.git#egg=spinup"
+            "spinup @ git+https://github.com/sebastko/spinningup-simple-install.git#egg=spinup"
         ]
     }
 )
