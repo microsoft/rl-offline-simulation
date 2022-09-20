@@ -1,5 +1,3 @@
-# Temporarily commenting out until we fix spinup dependency.
-"""
 import os
 import shutil
 import gym
@@ -15,7 +13,7 @@ TEST_OUTPUT_DIR = os.path.join(os.path.dirname(__file__), '.test_output')
 def test_ppo_agent():
     os.makedirs(TEST_OUTPUT_DIR, exist_ok=True)
     seed = 0
-    env = gym.make('CartPole-v1')
+    env = gym.make('CartPole-v1', new_step_api=True)
 
     exp_name = 'test-ppo'
     logger_kwargs = setup_logger_kwargs(exp_name, seed, data_dir=TEST_OUTPUT_DIR)
@@ -30,7 +28,7 @@ def test_ppo_agent():
         steps_per_epoch=1000,
     )
 
-    obs, _ = env.reset(seed=seed)
+    obs = env.reset(seed=seed)
     a = agent.begin_episode(obs)
     for t in range(5000):
         obs, r, terminated, truncated, _ = env.step(a)
@@ -39,7 +37,7 @@ def test_ppo_agent():
         if terminated or truncated:
             agent.commit_action(a)
             agent.end_episode(r, truncated=truncated)
-            obs, _ = env.reset(seed=seed)
+            obs = env.reset(seed=seed)
             a = agent.begin_episode(obs)
 
     log_output_dir = os.path.join(TEST_OUTPUT_DIR, exp_name, f'{exp_name}_s{seed}')
@@ -62,7 +60,7 @@ def test_ppo_agent():
 def test_ppo_agent_revealed():
     os.makedirs(TEST_OUTPUT_DIR, exist_ok=True)
     seed = 0
-    env = gym.make('CartPole-v1')
+    env = gym.make('CartPole-v1', new_step_api=True)
 
     exp_name = 'test-ppo-revealed'
     logger_kwargs = setup_logger_kwargs(exp_name, seed, data_dir=TEST_OUTPUT_DIR)
@@ -77,7 +75,7 @@ def test_ppo_agent_revealed():
         steps_per_epoch=1000,
     )
 
-    obs, _ = env.reset(seed=seed)
+    obs = env.reset(seed=seed)
     action_dist = agent.begin_episode(obs)
     for t in range(5000):
         a = sample_dist(action_dist)
@@ -89,7 +87,7 @@ def test_ppo_agent_revealed():
             a = sample_dist(action_dist)
             agent.commit_action(a)
             agent.end_episode(rew, truncated=truncated)
-            obs, _ = env.reset(seed=seed)
+            obs = env.reset(seed=seed)
             action_dist = agent.begin_episode(obs)
 
     log_output_dir = os.path.join(TEST_OUTPUT_DIR, exp_name, f'{exp_name}_s{seed}')
@@ -108,4 +106,3 @@ def test_ppo_agent_revealed():
 
     shutil.rmtree(TEST_OUTPUT_DIR)
     assert not os.path.exists(TEST_OUTPUT_DIR)
-"""
