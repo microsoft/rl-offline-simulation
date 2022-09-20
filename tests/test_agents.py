@@ -28,7 +28,7 @@ def test_ppo_agent():
         steps_per_epoch=1000,
     )
 
-    obs, _ = env.reset(seed=seed)
+    obs = env.reset(seed=seed)
     a = agent.begin_episode(obs)
     for t in range(5000):
         obs, r, terminated, truncated, _ = env.step(a)
@@ -75,7 +75,7 @@ def test_ppo_agent_revealed():
         steps_per_epoch=1000,
     )
 
-    obs, _ = env.reset(seed=seed)
+    obs = env.reset(seed=seed)
     action_dist = agent.begin_episode(obs)
     for t in range(5000):
         a = sample_dist(action_dist)
