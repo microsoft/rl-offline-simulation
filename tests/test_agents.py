@@ -13,7 +13,7 @@ TEST_OUTPUT_DIR = os.path.join(os.path.dirname(__file__), '.test_output')
 def test_ppo_agent():
     os.makedirs(TEST_OUTPUT_DIR, exist_ok=True)
     seed = 0
-    env = gym.make('CartPole-v1')
+    env = gym.make('CartPole-v1', new_step_api=True)
 
     exp_name = 'test-ppo'
     logger_kwargs = setup_logger_kwargs(exp_name, seed, data_dir=TEST_OUTPUT_DIR)
@@ -60,7 +60,7 @@ def test_ppo_agent():
 def test_ppo_agent_revealed():
     os.makedirs(TEST_OUTPUT_DIR, exist_ok=True)
     seed = 0
-    env = gym.make('CartPole-v1')
+    env = gym.make('CartPole-v1', new_step_api=True)
 
     exp_name = 'test-ppo-revealed'
     logger_kwargs = setup_logger_kwargs(exp_name, seed, data_dir=TEST_OUTPUT_DIR)
