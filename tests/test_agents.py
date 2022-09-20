@@ -37,7 +37,7 @@ def test_ppo_agent():
         if terminated or truncated:
             agent.commit_action(a)
             agent.end_episode(r, truncated=truncated)
-            obs, _ = env.reset(seed=seed)
+            obs = env.reset(seed=seed)
             a = agent.begin_episode(obs)
 
     log_output_dir = os.path.join(TEST_OUTPUT_DIR, exp_name, f'{exp_name}_s{seed}')
@@ -87,7 +87,7 @@ def test_ppo_agent_revealed():
             a = sample_dist(action_dist)
             agent.commit_action(a)
             agent.end_episode(rew, truncated=truncated)
-            obs, _ = env.reset(seed=seed)
+            obs = env.reset(seed=seed)
             action_dist = agent.begin_episode(obs)
 
     log_output_dir = os.path.join(TEST_OUTPUT_DIR, exp_name, f'{exp_name}_s{seed}')
