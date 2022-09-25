@@ -1,4 +1,3 @@
-from cmath import isnan
 import gym
 import numpy as np
 from spinup.algos.pytorch.ppo import core
@@ -152,7 +151,7 @@ class PPOAgentRevealed(Agent):
             return pi.probs.numpy()
 
         # epoch_ended
-        print('Warning: trajectory cut off by epoch at %d steps.' % self.ep_len, flush=True)        
+        print('Warning: trajectory cut off by epoch at %d steps.' % self.ep_len, flush=True)
         _, v = self.ac.step(torch.as_tensor(observation, dtype=torch.float32))
         self.buf.finish_path(v)
         self._on_epoch_end()

@@ -8,6 +8,8 @@ import pandas as pd
 
 
 class CartpoleBoxEncoder():
+    '''Heuristic Encoder Based on http://incompleteideas.net/sutton/book/code/pole.c'''
+
     N_BOXES = 162  # Number of disjoint boxes of state space.
     ONE_DEGREE = 0.0174532  # 2pi/360
     SIX_DEGREES = 0.1047192
@@ -16,8 +18,6 @@ class CartpoleBoxEncoder():
 
     @staticmethod
     def get_box(x, x_dot, theta, theta_dot):
-        # based on http://incompleteideas.net/sutton/book/code/pole.c
-
         box = 0
 
         if x < -2.4 or x > 2.4 or theta < - CartpoleBoxEncoder.TWELVE_DEGREES or theta > CartpoleBoxEncoder.TWELVE_DEGREES:

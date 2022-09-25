@@ -58,7 +58,7 @@ def record_dataset_in_memory(
         rng = np.random.default_rng(seed=seed)
 
     episode_id = worker_id
-    obs, _ = env.reset()
+    obs = env.reset()
 
     buffer = defaultdict(lambda: [])
     t = 0
@@ -120,7 +120,7 @@ def record_dataset_in_memory(
 
         if terminated or truncated:
             agent.end_episode(reward, truncated=truncated)
-            obs, _ = env.reset()
+            obs = env.reset()
 
             t = 0
             episode_id += workers_num

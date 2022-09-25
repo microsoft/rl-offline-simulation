@@ -60,7 +60,7 @@ def main():
     rng = np.random.default_rng(seed=args.seed)
 
     env_name = 'MyGridNaviCoords-v1'
-    env = gym.make(env_name, seed=args.seed+100000)
+    env = gym.make(env_name, seed=args.seed + 100000)
     env.reset_task(np.array([4, 4]))
     pi = defaultdict(lambda: np.ones(5) / 5)  # random policy
 
@@ -91,7 +91,7 @@ def main():
 
     states_visited = buffer['observations']
 
-    fig, ax = plt.subplots(figsize=(4,4))
+    fig, ax = plt.subplots(figsize=(4, 4))
     plt.scatter(np.array(states_visited)[:, 0], np.array(states_visited)[:, 1], marker='.', alpha=0.1, c='k', lw=0, s=1)
     plt.xlim(0, 1)
     plt.ylim(0, 1)
