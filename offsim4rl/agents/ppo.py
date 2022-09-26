@@ -1,4 +1,3 @@
-from cmath import isnan
 import gym
 import numpy as np
 from spinup.algos.pytorch.ppo import core
@@ -13,6 +12,7 @@ from torch.optim import Adam
 
 from offsim4rl.agents.agent import Agent
 from offsim4rl.data import ProbDistribution
+from offsim4rl.utils.prob_utils import sample_dist
 
 
 class MLPActorCriticRevealed(core.MLPActorCritic):
@@ -107,7 +107,7 @@ class PPOAgentRevealed(Agent):
         a = None
         logp = None
         self.prev_interaction = (observation, pi, a, v, logp)
-        return pi
+        return pi.probs.numpy()
 
     def commit_action(self, action):
         o, pi, _, v, _ = self.prev_interaction
@@ -149,15 +149,15 @@ class PPOAgentRevealed(Agent):
         epoch_ended = self.steps == self.local_steps_per_epoch - 1
         self.steps += 1
         if not epoch_ended:
-            return pi
+            return pi.probs.numpy()
 
         # epoch_ended
-        print('Warning: trajectory cut off by epoch at %d steps.' % self.ep_len, flush=True)        
+        print('Warning: trajectory cut off by epoch at %d steps.' % self.ep_len, flush=True)
         _, v = self.ac.step(torch.as_tensor(observation, dtype=torch.float32))
         self.buf.finish_path(v)
         self._on_epoch_end()
 
-        return pi
+        return pi.probs.numpy()
 
     def adapt(self):
         transitions = self.buf.get()
@@ -268,12 +268,12 @@ class PPOAgent(PPOAgentRevealed):
 
     def begin_episode(self, observation):
         pi = super(PPOAgent, self).begin_episode(observation)
-        a = pi.sample().numpy()
+        a = sample_dist(pi)
         self.commit_action(a)
         return a
 
     def step(self, prev_reward, observation):
         pi = super(PPOAgent, self).step(prev_reward, observation)
-        a = pi.sample().numpy()
+        a = sample_dist(pi)
         self.commit_action(a)
         return a

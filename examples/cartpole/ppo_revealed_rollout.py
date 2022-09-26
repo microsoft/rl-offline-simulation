@@ -1,17 +1,21 @@
 # Collect data for cartpole useing ppo agent
 import argparse
+import os
 
 import gym
 from spinup.utils.logx import EpochLogger
-from spinup.utils.mpi_tools import mpi_fork, proc_id
+from spinup.utils.mpi_tools import mpi_fork
 from spinup.utils.run_utils import setup_logger_kwargs
 
-from offsim4rl.agents.ppo import PPOAgent, PPOAgentRevealed
-from offsim4rl.utils.prob_utils import sample_dist
+from offsim4rl.agents.ppo import PPOAgentRevealed
+from offsim4rl.utils.dataset_utils import record_dataset_in_memory
 
 def main(args):
     logger_kwargs = setup_logger_kwargs(args.exp_name, 0, data_dir=args.output_dir)
     logger = EpochLogger(**logger_kwargs)
+
+    os.makedirs(args.output_dir, exist_ok=True)
+    output_path = os.path.join(args.output_dir, 'cartpole.hdf5')
 
     env = gym.make(args.env)
     agent = PPOAgentRevealed(
@@ -25,23 +29,14 @@ def main(args):
     )
 
     mpi_fork(args.cpu)  # run parallel code with mpi
-    num_interactions = args.num_iter
 
-    obs, _ = env.reset(seed=args.seed)
-    action_dist = agent.begin_episode(obs)
+    dataset = record_dataset_in_memory(
+        env,
+        agent,
+        num_samples=args.num_iter,
+        new_step_api=True)
 
-    for t in range(num_interactions):
-        a = sample_dist(action_dist)
-        agent.commit_action(a)
-        obs, rew, terminated, truncated, _ = env.step(a)
-        action_dist = agent.step(rew, obs)
-
-        if terminated or truncated:
-            a = sample_dist(action_dist)
-            agent.commit_action(a)
-            agent.end_episode(rew, truncated=truncated)
-            obs, _ = env.reset(seed=args.seed)
-            action_dist = agent.begin_episode(obs)
+    dataset.save_hdf5(output_path)
 
 
 if __name__ == "__main__":

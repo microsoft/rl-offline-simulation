@@ -43,9 +43,9 @@ def record_dataset_in_memory(
         workers_num=1,
         new_step_api=True,
         include_infos=True):
-    
+
     def _append_buffer(buffer, **kwargs):
-        for k,v in kwargs.items():
+        for k, v in kwargs.items():
             buffer[k].append(v)
 
     def _npify(buffer):
@@ -71,12 +71,13 @@ def record_dataset_in_memory(
         action_dist = agent.begin_episode(obs) if t == 0 else agent.step(reward, obs)
 
         action = sample_dist(action_dist)
+        agent.commit_action(action)
         step_result = env.step(action)
 
         if len(step_result) == 4:
             # Old gym API. Discouraged, since it may incorrectly mark regular states 
             # terminal states, due to episode truncation.
-            if new_step_api:                
+            if new_step_api:
                 raise ValueError("new_step_api is enabled, but the environment seems return just 'done' instead of 'terminated' and 'truncated'. Use different environment or set new_step_api to False.")
             next_obs, reward, done, info = step_result
             terminated = done
@@ -91,8 +92,8 @@ def record_dataset_in_memory(
             if info_keys is None:
                 # To make sure the vectors of the same length and are well-aligned with the rest of the experience,
                 # only info keys that occur in the first step are being recorded.
-                info_keys = [k for k,v in info.items() if isinstance(v, info_supported_types)]
-            
+                info_keys = [k for k, v in info.items() if isinstance(v, info_supported_types)]
+
             for k in info_keys:
                 if k not in info:
                     numpy_infos[f"infos/{k}"] = None
@@ -101,7 +102,7 @@ def record_dataset_in_memory(
                     numpy_infos[f"infos/{k}"] = info[k]
                 else:
                     logging.warning(f"Example's info {k} is not of a supported type. Skipping.")
-            
+
             remaining_keys = [k for k in info.keys() if k not in info_keys]
             logging.debug(f"Skipping the following keys in the example's info dict: {remaining_keys}")
 
@@ -118,8 +119,7 @@ def record_dataset_in_memory(
             **numpy_infos)
 
         if terminated or truncated:
-            if terminated:
-                agent.end_episode(reward)
+            agent.end_episode(reward, truncated=truncated)
             obs = env.reset()
 
             t = 0
