@@ -12,6 +12,7 @@ from torch.optim import Adam
 
 from offsim4rl.agents.agent import Agent
 from offsim4rl.data import ProbDistribution
+from offsim4rl.utils.prob_utils import sample_dist
 
 
 class MLPActorCriticRevealed(core.MLPActorCritic):
@@ -267,12 +268,12 @@ class PPOAgent(PPOAgentRevealed):
 
     def begin_episode(self, observation):
         pi = super(PPOAgent, self).begin_episode(observation)
-        a = pi.sample().numpy()
+        a = sample_dist(pi)
         self.commit_action(a)
         return a
 
     def step(self, prev_reward, observation):
         pi = super(PPOAgent, self).step(prev_reward, observation)
-        a = pi.sample().numpy()
+        a = sample_dist(pi)
         self.commit_action(a)
         return a
