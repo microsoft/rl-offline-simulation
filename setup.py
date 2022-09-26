@@ -23,6 +23,9 @@ setuptools.setup(
         "tqdm"
     ],
     extras_require={
-        'sb3': ["stable-baselines3"]
+        'agents': [
+            # Forked version of the spinup library, with simplified dependencies.
+            "spinup @ git+https://github.com/sebastko/spinningup-simple-install.git#egg=spinup"
+        ]
     }
 )
