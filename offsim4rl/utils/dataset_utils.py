@@ -33,7 +33,6 @@ def load_h5_dataset(h5path):
                 dataset[k] = dataset_file[k][()]
     return dataset
 
-
 def record_dataset_in_memory(
         env: gym.Env,
         agent: Agent,
@@ -58,7 +57,7 @@ def record_dataset_in_memory(
         rng = np.random.default_rng(seed=seed)
 
     episode_id = worker_id
-    obs = env.reset()
+    obs = env.reset(seed=seed)
 
     buffer = defaultdict(lambda: [])
     t = 0
@@ -120,7 +119,7 @@ def record_dataset_in_memory(
 
         if terminated or truncated:
             agent.end_episode(reward, truncated=truncated)
-            obs = env.reset()
+            obs = env.reset(seed=seed)
 
             t = 0
             episode_id += workers_num

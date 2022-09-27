@@ -15,15 +15,16 @@ from offsim4rl.utils.vis_utils import CartPoleVisUtils
 
 def main(args):
     os.makedirs(args.output_dir, exist_ok=True)
-    output_path = os.path.join(args.output_dir, f'cartpole_pd_controller_seed_{args.seed}_steps_{args.num_iter}.hdf5')
+    output_path = os.path.join(args.output_dir, f'cartpole_pd_controller_{args.mode}_seed_{args.seed}_steps_{args.num_iter}.hdf5')
 
-    env = gym.make(args.env, render_mode='human', new_step_api=True)
+    env = gym.make(args.env, new_step_api=True)
     agent = CartPolePDController(
         env.action_space,
+        mode=args.mode
     )
 
-    mpi_fork(args.cpu)  # run parallel code with mpi
-
+    # mpi_fork(args.cpu)  # run parallel code with mpi
+    # rollout(agent, env, num_interactions=100, seed=args.seed)
     record_dataset(agent, env, num_interactions=args.num_iter, seed=args.seed, output_path=output_path)
     dataset = OfflineDataset.load_hdf5(output_path)
     CartPoleVisUtils.replay(dataset, record_clip=True, output_dir=os.path.join(args.output_dir, 'clips'))
@@ -59,7 +60,8 @@ if __name__ == "__main__":
     parser.add_argument('--env', type=str, default='CartPole-v1')
     parser.add_argument('--seed', '-s', type=int, default=0)
     parser.add_argument('--cpu', type=int, default=4)
-    parser.add_argument('--num_iter', type=int, default=50000)
+    parser.add_argument('--num_iter', type=int, default=10000)
+    parser.add_argument('--mode', type=str, default='theta')
     parser.add_argument('--output_dir', type=str, default='./outputs')
 
     args = parser.parse_args()

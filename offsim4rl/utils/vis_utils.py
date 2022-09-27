@@ -158,7 +158,7 @@ class CartPoleVisUtils():
         cur_episode = None
         for obs, terminal, episode_id in zip(dataset.experience['observations'], dataset.experience['terminals'], dataset.experience['episode_ids']):
             if record_clip:
-                screen, frame = CartPoleVisUtils.render(obs, terminated=terminal, render_mode='rgb_array', render_fps=fps, screen=screen)
+                screen, frame = CartPoleVisUtils.render(obs, terminal=terminal, render_mode='rgb_array', render_fps=fps, screen=screen)
                 frames.append(frame)
                 if terminal:
                     for _ in range(15):
