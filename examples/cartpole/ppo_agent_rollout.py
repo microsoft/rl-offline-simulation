@@ -39,7 +39,7 @@ def main():
 
     mpi_fork(args.cpu)  # run parallel code with mpi
     num_interactions = args.num_iter
-    obs, _ = env.reset(seed=args.seed)
+    obs = env.reset(seed=args.seed)
     a = agent.begin_episode(obs)
     for t in range(num_interactions):
         obs, r, terminated, truncated, _ = env.step(a)
@@ -48,7 +48,7 @@ def main():
         if terminated or truncated:
             agent.commit_action(a)
             agent.end_episode(r, truncated=truncated)
-            obs, _ = env.reset(seed=args.seed)
+            obs = env.reset(seed=args.seed)
             a = agent.begin_episode(obs)
 
 

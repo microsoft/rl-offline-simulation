@@ -49,7 +49,7 @@ class OfflineDataset:
           rewards: np.ndarray,
           next_observations: np.ndarray,
           terminals: np.ndarray
-        
+
         Optional keys:
           episode_ids: np.ndarray,
           steps: np.ndarray,
@@ -58,13 +58,13 @@ class OfflineDataset:
         """
 
         self._validate_experience(experience)
-        
+
         self.observation_space = observation_space
         self.action_space = action_space
         self.action_dist_type = action_dist_type
 
         self.experience = experience
-    
+
     def iterate_row_tuples(self):
         for i in range(self.experience['observations'].shape[0]):
             yield Transition(
@@ -146,6 +146,24 @@ class HDF5Dataset(OfflineDataset):
         bytes_str = group.attrs.get(attr_name, default=None)
         return pickle.loads(bytes_str.tobytes()) if bytes_str is not None else default
 
+    @staticmethod
+    def concatenate(file_names_to_concatenate, output_file_path='.'):
+        with h5py.File(output_file_path, 'w', libver='latest') as fout:
+            for k in h5py.File(file_names_to_concatenate[0], 'r').keys():
+                sh = h5py.File(file_names_to_concatenate[0], 'r')[k].shape
+                total_size = 0
+                for filename in file_names_to_concatenate:
+                    total_size += h5py.File(filename, 'r')[k].shape[0]
+                layout = h5py.VirtualLayout(shape=(total_size,) + sh[1:], dtype=np.float64)
+                cur_idx = 0
+
+                for filename in file_names_to_concatenate:
+                    cur_shape = h5py.File(filename, 'r')[k].shape
+                    vsource = h5py.VirtualSource(filename, k, shape=cur_shape)
+                    layout[cur_idx:cur_idx + cur_shape[0]] = vsource
+                    cur_idx += cur_shape[0]
+
+                fout.create_virtual_dataset(k, layout, fillvalue=0)
 
 class SAS_Dataset(Dataset):
     def __init__(self, x, a, x_next):
