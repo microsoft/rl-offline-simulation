@@ -15,6 +15,21 @@ from offsim4rl.evaluators.per_state_rejection import PerStateRejectionSampling
 from offsim4rl.utils.vis_utils import plot_metric_from_spinup_progress
 
 
+def concatenate_files(input_dir, output_dir, prefix):
+    files_to_concatenate = []
+    for file in os.listdir(input_dir):
+        if file.startswith(prefix):
+            files_to_concatenate.append(os.path.join(input_dir, file))
+
+    dataset_name = f'{prefix}_concat.hdf5'
+    HDF5Dataset.concatenate(
+        files_to_concatenate,
+        os.path.join(output_dir, dataset_name)
+    )
+
+    return dataset_name
+
+
 def main(args):
     logger_kwargs = setup_logger_kwargs(args.exp_name, args.seed, data_dir=args.output_dir)
     logger = EpochLogger(**logger_kwargs)
@@ -32,9 +47,11 @@ def main(args):
         steps_per_epoch=args.steps,
     )
 
-    mpi_fork(args.cpu)  # run parallel code with mpi
+    # mpi_fork(args.cpu)  # run parallel code with mpi
 
-    dataset = OfflineDataset.load_hdf5(os.path.join(args.input_dir, 'pd_controller_eps_0.2_small.hdf5'))
+    dataset_name = concatenate_files(os.path.join(args.input_dir, 'ppo'), args.output_dir, args.prefix)
+
+    dataset = OfflineDataset.load_hdf5(os.path.join(args.input_dir, dataset_name))
     box_encoder = CartpoleBoxEncoder()
     start_time = time.time()
     psrs = PerStateRejectionSampling(dataset, num_states=box_encoder.N_BOXES, encoder=box_encoder, new_step_api=True)
@@ -44,7 +61,7 @@ def main(args):
     simulated_steps = 0
     steps_in_episode = 0
     while obs is not None:
-        action_dist = agent.begin_episode(obs) if simulated_steps == 0 else agent.step(reward, obs)
+        action_dist = agent.begin_episode(obs) if steps_in_episode == 0 else agent.step(reward, obs)
         action, obs, reward, terminated, truncated, info = psrs.step_dist(action_dist)
         if action is None:
             break
@@ -57,6 +74,7 @@ def main(args):
             truncated = True
 
         if terminated or truncated:
+            print(f'End of episode. Steps in episode: {steps_in_episode}')
             agent.end_episode(reward, truncated=truncated)
             obs = psrs.reset()
             steps_in_episode = 0
@@ -83,6 +101,7 @@ if __name__ == "__main__":
     parser.add_argument('--exp_name', type=str, default='ppo')
     parser.add_argument('--output_dir', type=str, default='./outputs')
     parser.add_argument('--input_dir', type=str, default='./inputs')
+    parser.add_argument('--prefix', type=str, default='cartpole')
 
     args = parser.parse_args()
     main(args)
