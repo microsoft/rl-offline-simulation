@@ -12,12 +12,13 @@ def plot_latent_state_color_map(df_output, output_path='latent_state.png'):
     plt.ylim(0, 1)
     plt.savefig(output_path)
 
-def plot_episode_len_from_spinup_progress(progress_file_path, output_path='episode_length.png'):
+def plot_metric_from_spinup_progress(progress_file_path, metric_name, output_dir=''):
     df = pd.read_csv(progress_file_path, sep='\t')
-    plt.plot(df['EpLen'])
-    plt.xlabel('epoch')
-    plt.ylabel('EpLen')
-    plt.savefig(output_path)
+    plt.plot(df['Average' + metric_name])
+    plt.fill_between(df['Epoch'], df['Average' + metric_name] - df['Std' + metric_name], df['Average' + metric_name] + df['Std' + metric_name], alpha=0.2, color='k')
+    plt.xlabel('Epoch')
+    plt.ylabel(metric_name)
+    plt.savefig(os.path.join(output_dir, f'{metric_name}.png'))
 
 class CartPoleVisUtils():
     @staticmethod

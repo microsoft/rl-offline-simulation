@@ -8,7 +8,7 @@ from spinup.utils.mpi_tools import mpi_fork, proc_id
 from spinup.utils.run_utils import setup_logger_kwargs
 
 from offsim4rl.agents.ppo import PPOAgent
-from offsim4rl.utils.vis_utils import plot_episode_len_from_spinup_progress
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -51,8 +51,6 @@ def main():
             agent.end_episode(r, truncated=truncated)
             obs = env.reset(seed=args.seed)
             a = agent.begin_episode(obs)
-
-    plot_episode_len_from_spinup_progress(os.path.join(logger_kwargs['output_dir'], 'progress.txt'), os.path.join(args.output_dir, 'episode_length.png'))
 
 
 if __name__ == "__main__":

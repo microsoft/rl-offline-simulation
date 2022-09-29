@@ -24,10 +24,9 @@ def main(args):
         eps=0.2
     )
 
-    # mpi_fork(args.cpu)  # run parallel code with mpi
-    # rollout(agent, env, num_interactions=100, seed=args.seed)
+    mpi_fork(args.cpu)  # run parallel code with mpi
     record_dataset(agent, env, num_interactions=args.num_iter, seed=args.seed, output_path=output_path)
-    dataset = OfflineDataset.load_hdf5(output_path)
+    # dataset = OfflineDataset.load_hdf5(output_path)
     # CartPoleVisUtils.replay(dataset, record_clip=True, output_dir=os.path.join(args.output_dir, 'clips'))
 
 def rollout(agent, env, num_interactions, seed=None):
