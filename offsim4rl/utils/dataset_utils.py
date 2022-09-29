@@ -51,11 +51,6 @@ def record_dataset_in_memory(
         for k in buffer:
             buffer[k] = np.array(buffer[k])
 
-    if seed is not None:
-        random.seed(seed)
-        np.random.seed(seed)
-        rng = np.random.default_rng(seed=seed)
-
     episode_id = worker_id
     obs = env.reset(seed=seed)
 
@@ -83,7 +78,7 @@ def record_dataset_in_memory(
             truncated = False
         else:
             # New gym API. Recommended for collecting data for offline simulation.
-            next_obs, reward, terminated, truncated, info = env.step(action)
+            next_obs, reward, terminated, truncated, info = step_result
 
         numpy_infos = {}
 
@@ -119,7 +114,7 @@ def record_dataset_in_memory(
 
         if terminated or truncated:
             agent.end_episode(reward, truncated=truncated)
-            obs = env.reset(seed=seed)
+            obs = env.reset()
 
             t = 0
             episode_id += workers_num

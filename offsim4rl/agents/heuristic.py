@@ -62,6 +62,6 @@ class CartPolePDController(Agent):
         elif self.mode == 'theta-omega':
             act = self._theta_omega_policy(obs)
 
-        pi[act] = 1 - self.eps
-        pi[1 - act] = self.eps
+        pi[act] = 1 - self.eps / 2
+        pi[1 - act] = self.eps / 2
         return pi

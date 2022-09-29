@@ -1,5 +1,6 @@
 # Collect data for cartpole useing ppo agent
 import argparse
+import os
 
 import gym
 from spinup.utils.logx import EpochLogger
@@ -7,6 +8,7 @@ from spinup.utils.mpi_tools import mpi_fork, proc_id
 from spinup.utils.run_utils import setup_logger_kwargs
 
 from offsim4rl.agents.ppo import PPOAgent
+from offsim4rl.utils.vis_utils import plot_episode_len_from_spinup_progress
 
 def main():
     parser = argparse.ArgumentParser()
@@ -23,10 +25,10 @@ def main():
 
     args = parser.parse_args()
 
-    logger_kwargs = setup_logger_kwargs(args.exp_name, 0, data_dir=args.output_dir)
+    logger_kwargs = setup_logger_kwargs(args.exp_name, args.seed, data_dir=args.output_dir)
     logger = EpochLogger(**logger_kwargs)
 
-    env = gym.make(args.env)
+    env = gym.make(args.env, new_step_api=True)
     agent = PPOAgent(
         env.observation_space,
         env.action_space,
@@ -46,10 +48,11 @@ def main():
         a = agent.step(r, obs)
 
         if terminated or truncated:
-            agent.commit_action(a)
             agent.end_episode(r, truncated=truncated)
             obs = env.reset(seed=args.seed)
             a = agent.begin_episode(obs)
+
+    plot_episode_len_from_spinup_progress(os.path.join(logger_kwargs['output_dir'], 'progress.txt'), os.path.join(args.output_dir, 'episode_length.png'))
 
 
 if __name__ == "__main__":

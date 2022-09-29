@@ -2,6 +2,7 @@ import os
 import math
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import time
 
 def plot_latent_state_color_map(df_output, output_path='latent_state.png'):
@@ -11,6 +12,12 @@ def plot_latent_state_color_map(df_output, output_path='latent_state.png'):
     plt.ylim(0, 1)
     plt.savefig(output_path)
 
+def plot_episode_len_from_spinup_progress(progress_file_path, output_path='episode_length.png'):
+    df = pd.read_csv(progress_file_path, sep='\t')
+    plt.plot(df['EpLen'])
+    plt.xlabel('epoch')
+    plt.ylabel('EpLen')
+    plt.savefig(output_path)
 
 class CartPoleVisUtils():
     @staticmethod
@@ -149,6 +156,7 @@ class CartPoleVisUtils():
 
     @staticmethod
     def replay(dataset, record_clip=False, num_frames=500, fps=20, output_dir='.'):
+        os.makedirs(output_dir, exist_ok=True)
         if record_clip:
             import imageio
 

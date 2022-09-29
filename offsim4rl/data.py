@@ -148,9 +148,18 @@ class HDF5Dataset(OfflineDataset):
 
     @staticmethod
     def concatenate(file_names_to_concatenate, output_file_path='.'):
+        hdf5_dataset = h5py.File(file_names_to_concatenate[0], 'r')
+        obs_space = HDF5Dataset._deserialize_attr(hdf5_dataset, 'observation_space')
+        action_space = HDF5Dataset._deserialize_attr(hdf5_dataset, 'action_space')
+        action_dist_type = HDF5Dataset._deserialize_attr(hdf5_dataset, 'action_dist_type', ProbDistribution.NoProbability)
+
         with h5py.File(output_file_path, 'w', libver='latest') as fout:
-            for k in h5py.File(file_names_to_concatenate[0], 'r').keys():
-                sh = h5py.File(file_names_to_concatenate[0], 'r')[k].shape
+            HDF5Dataset._serialize_attr(fout, 'observation_space', obs_space)
+            HDF5Dataset._serialize_attr(fout, 'action_space', action_space)
+            HDF5Dataset._serialize_attr(fout, 'action_dist_type', action_dist_type)
+
+            for k in hdf5_dataset.keys():
+                sh = hdf5_dataset[k].shape
                 total_size = 0
                 for filename in file_names_to_concatenate:
                     total_size += h5py.File(filename, 'r')[k].shape[0]
