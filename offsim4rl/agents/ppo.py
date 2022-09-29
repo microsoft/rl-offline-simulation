@@ -70,7 +70,11 @@ class PPOAgentRevealed(Agent):
         self.target_kl = target_kl
         self.save_freq = save_freq
 
-        self.obs_dim = 1
+        if isinstance(observation_space, gym.spaces.Box):
+            self.obs_dim = observation_space.shape[0]
+        elif isinstance(observation_space, gym.spaces.Discrete):
+            self.obs_dim = 1
+
         self.act_dim = action_space.shape
 
         # Sync params across processes
