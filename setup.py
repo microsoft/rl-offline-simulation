@@ -11,7 +11,7 @@ setuptools.setup(
     version="0.1",
     url="https://www.github.com/microsoft/rl-offline-simulation",
     include_package_data=True,
-    packages=setuptools.find_packages(include=['offsim4rl']),
+    packages=setuptools.find_packages(include=['offsim4rl', 'azureml_connector']),
     install_requires=[
         "gym",
         "h5py",
