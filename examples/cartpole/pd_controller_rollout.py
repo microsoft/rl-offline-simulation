@@ -8,10 +8,8 @@ from spinup.utils.mpi_tools import mpi_fork
 from spinup.utils.run_utils import setup_logger_kwargs
 
 from offsim4rl.agents.heuristic import CartPolePDController
-from offsim4rl.data import OfflineDataset
 from offsim4rl.utils.dataset_utils import record_dataset_in_memory
 from offsim4rl.utils.prob_utils import sample_dist
-from offsim4rl.utils.vis_utils import CartPoleVisUtils
 
 def main(args):
     os.makedirs(args.output_dir, exist_ok=True)
@@ -26,8 +24,6 @@ def main(args):
 
     mpi_fork(args.cpu)  # run parallel code with mpi
     record_dataset(agent, env, num_interactions=args.num_iter, seed=args.seed, output_path=output_path)
-    # dataset = OfflineDataset.load_hdf5(output_path)
-    # CartPoleVisUtils.replay(dataset, record_clip=True, output_dir=os.path.join(args.output_dir, 'clips'))
 
 def rollout(agent, env, num_interactions, seed=None):
     obs = env.reset(seed=seed)

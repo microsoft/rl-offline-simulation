@@ -12,6 +12,7 @@ from offsim4rl.agents.ppo import PPOAgentRevealed
 from offsim4rl.data import OfflineDataset, HDF5Dataset
 from offsim4rl.encoders.heuristic import CartpoleBoxEncoder
 from offsim4rl.evaluators.per_state_rejection import PerStateRejectionSampling
+from offsim4rl.utils.dataset_utils import record_dataset_in_memory
 from offsim4rl.utils.vis_utils import plot_metric_from_spinup_progress
 
 
@@ -21,7 +22,7 @@ def concatenate_files(input_dir, output_dir, prefix):
         if file.startswith(prefix):
             files_to_concatenate.append(os.path.join(input_dir, file))
 
-    dataset_name = f'{prefix}_concat.hdf5'
+    dataset_name = f'{prefix}_concat_{time.time()}.hdf5'
     HDF5Dataset.concatenate(
         files_to_concatenate,
         os.path.join(output_dir, dataset_name)
@@ -35,6 +36,7 @@ def main(args):
     logger = EpochLogger(**logger_kwargs)
 
     os.makedirs(args.output_dir, exist_ok=True)
+    output_path = os.path.join(args.output_dir, f'cartpole_psrs_seed_{args.seed}.hdf5')
 
     env = gym.make(args.env, new_step_api=True)
     agent = PPOAgentRevealed(
@@ -47,45 +49,34 @@ def main(args):
         steps_per_epoch=args.steps,
     )
 
-    # mpi_fork(args.cpu)  # run parallel code with mpi
+    mpi_fork(args.cpu)  # run parallel code with mpi
 
-    dataset_name = concatenate_files(os.path.join(args.input_dir, 'ppo'), args.output_dir, args.prefix)
+    concat_dataset = concatenate_files(os.path.join(args.output_dir, args.dataset_name), os.path.join(args.output_dir, args.dataset_name), args.prefix)
 
-    dataset = OfflineDataset.load_hdf5(os.path.join(args.input_dir, dataset_name))
+    dataset = OfflineDataset.load_hdf5(os.path.join(args.output_dir, args.dataset_name, concat_dataset))
+    print("Loaded concat dataset")
     box_encoder = CartpoleBoxEncoder()
     start_time = time.time()
+    print(f"Starting PSRS intialization at: {start_time}")
     psrs = PerStateRejectionSampling(dataset, num_states=box_encoder.N_BOXES, encoder=box_encoder, new_step_api=True)
+    print(f"Finished PSRS intialization. It took: {time.time() - start_time} seconds")
 
-    obs = psrs.reset()
-    reward = None
-    simulated_steps = 0
-    steps_in_episode = 0
-    while obs is not None:
-        action_dist = agent.begin_episode(obs) if steps_in_episode == 0 else agent.step(reward, obs)
-        action, obs, reward, terminated, truncated, info = psrs.step_dist(action_dist)
-        if action is None:
-            break
-        agent.commit_action(action)
+    dataset = record_dataset_in_memory(
+        env,
+        agent,
+        num_samples=args.num_iter,
+        seed=args.seed,
+        new_step_api=True)
 
-        simulated_steps += 1
-        steps_in_episode += 1
-
-        if steps_in_episode >= 500:
-            truncated = True
-
-        if terminated or truncated:
-            print(f'End of episode. Steps in episode: {steps_in_episode}')
-            agent.end_episode(reward, truncated=truncated)
-            obs = psrs.reset()
-            steps_in_episode = 0
+    dataset.save_hdf5(output_path)
 
     print('Simulation took: {0} minutes.'.format(str((time.time() - start_time) / 60)))
 
-    plot_metric_from_spinup_progress(
-        progress_file_path=os.path.join(logger_kwargs['output_dir'], 'progress.txt'),
-        metric_name='EpRet',
-        output_dir=logger_kwargs['output_dir']
-    )
+    # plot_metric_from_spinup_progress(
+    #     progress_file_path=os.path.join(logger_kwargs['output_dir'], 'progress.txt'),
+    #     metric_name='EpRet',
+    #     output_dir=logger_kwargs['output_dir']
+    # )
 
 
 if __name__ == "__main__":
@@ -101,6 +92,7 @@ if __name__ == "__main__":
     parser.add_argument('--exp_name', type=str, default='ppo')
     parser.add_argument('--output_dir', type=str, default='./outputs')
     parser.add_argument('--input_dir', type=str, default='./inputs')
+    parser.add_argument('--dataset_name', type=str, default='ppo')
     parser.add_argument('--prefix', type=str, default='cartpole')
 
     args = parser.parse_args()

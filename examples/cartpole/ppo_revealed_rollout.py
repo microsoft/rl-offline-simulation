@@ -4,7 +4,6 @@ import os
 
 import gym
 from spinup.utils.logx import EpochLogger
-from spinup.utils.mpi_tools import mpi_fork
 from spinup.utils.run_utils import setup_logger_kwargs
 
 from offsim4rl.agents.ppo import PPOAgentRevealed
@@ -31,7 +30,6 @@ def main(args):
         steps_per_epoch=args.steps,
     )
 
-    mpi_fork(args.cpu)  # run parallel code with mpi
     dataset = record_dataset_in_memory(
         env,
         agent,

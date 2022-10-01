@@ -116,7 +116,6 @@ class CartPoleVisUtils():
             polelen - polewidth / 2,
             -polewidth / 2,
         )
-
         pole_coords = []
         for coord in [(l, b), (l, t), (r, t), (r, b)]:
             coord = pygame.math.Vector2(coord).rotate_rad(-x[2])
@@ -156,16 +155,16 @@ class CartPoleVisUtils():
             )
 
     @staticmethod
-    def replay(dataset, record_clip=False, num_frames=500, fps=20, output_dir='.'):
+    def replay(dataset, record_clip=False, total_num_steps=2000, num_frames=500, fps=20, output_dir='.'):
         os.makedirs(output_dir, exist_ok=True)
         if record_clip:
             import imageio
+            from PIL import Image
 
         frames = []
         clip_count = 0
         screen = None
-        cur_episode = None
-        for obs, terminal, episode_id in zip(dataset.experience['observations'], dataset.experience['terminals'], dataset.experience['episode_ids']):
+        for obs, terminal in zip(dataset.experience['observations'][-total_num_steps:], dataset.experience['terminals'][-total_num_steps:]):
             if record_clip:
                 screen, frame = CartPoleVisUtils.render(obs, terminal=terminal, render_mode='rgb_array', render_fps=fps, screen=screen)
                 frames.append(frame)
@@ -178,6 +177,16 @@ class CartPoleVisUtils():
                     time.sleep(1)
 
             if record_clip and len(frames) % num_frames == 0:
+                imgs = []
+                blended = Image.fromarray(frames[0])
+                imgs.append(blended)
+                for i, frame in enumerate(frames[1:]):
+                    blended = Image.blend(blended, Image.fromarray(frame), 0.01)
+                    if i % 4 == 0:
+                        imgs.append(blended)
+
+                blended.save(os.path.join(output_dir, f'clip_{clip_count}.png'))
+                imageio.mimsave(os.path.join(output_dir, f'alpha_clip_{clip_count}.gif'), imgs, fps=fps)
                 imageio.mimsave(os.path.join(output_dir, f'clip_{clip_count}.gif'), frames, fps=fps)
                 frames = []
                 clip_count += 1

@@ -23,7 +23,7 @@ datastore = ws.get_default_datastore()
 # datastore = Datastore.get(ws, 'offsim4rl')
 input_ref = Dataset.File.from_files(datastore.path("offsim4rl/cartpole-v1/**")).as_mount()
 output_ref = OutputFileDatasetConfig(
-    destination=(datastore, "offsim4rl/cartpole-v1")
+    destination=(datastore, "offsim4rl/cartpole-v1/ppo")
 )
 
 installation_cmds = "pip install -e git+https://github.com/sebastko/spinningup-simple-install.git#egg=spinup && pip install -e . && "
@@ -31,24 +31,20 @@ installation_cmds = "pip install -e git+https://github.com/sebastko/spinningup-s
 script_run_config = ScriptRunConfig(
     source_directory=os.path.join(root_dir),
     command=[
-        # installation_cmds + "python", "./examples/cartpole/psrs_with_ppo.py",
-        installation_cmds + "python", "./examples/cartpole/psrs_rollout.py",
+        installation_cmds + "python", "./examples/cartpole/ppo_revealed_rollout.py",
         "--input_dir", input_ref,
         "--output_dir", output_ref,
         "--env", "CartPole-v1",
         "--cpu", "0",
-        "--steps", "1000",
-        "--num_iter", "20000",
-        "--exp_name", "CartPole-PSRS-ppo",
-        "--dataset_name", "ppo_small",
-        "--prefix", "cartpole",
-        "--seed", "9"
+        "--seed", "2",
+        "--num_iter", "50000",
+        '--exp_name', 'CartPole-v1_ppo' 
     ],
-    compute_target=compute_manager.create_compute_target(ws, "gpu-nc24"),
+    compute_target=compute_manager.create_compute_target(ws, "ds3v2"),
     environment=environment_manager.create_env(
         ws,
         "offsim4rl-env",
-        os.path.join(root_dir, "requirements.txt"),
+        os.path.join(root_dir, "requirements.txt")
     ),
 )
 

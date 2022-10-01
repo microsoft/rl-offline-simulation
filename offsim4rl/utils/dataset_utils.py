@@ -11,6 +11,7 @@ from collections import defaultdict
 from offsim4rl.utils.prob_utils import sample_dist
 from offsim4rl.agents.agent import Agent
 from offsim4rl.data import OfflineDataset
+from offsim4rl.evaluators.per_state_rejection import PerStateRejectionSampling
 
 
 def get_keys(h5file):
@@ -41,7 +42,8 @@ def record_dataset_in_memory(
         worker_id=0,
         workers_num=1,
         new_step_api=True,
-        include_infos=True):
+        include_infos=True,
+        env_time_limit=500):
 
     def _append_buffer(buffer, **kwargs):
         for k, v in kwargs.items():
@@ -64,21 +66,26 @@ def record_dataset_in_memory(
     for _ in range(num_samples):
         action_dist = agent.begin_episode(obs) if t == 0 else agent.step(reward, obs)
 
-        action = sample_dist(action_dist)
-        agent.commit_action(action)
-        step_result = env.step(action)
-
-        if len(step_result) == 4:
-            # Old gym API. Discouraged, since it may incorrectly mark regular states 
-            # terminal states, due to episode truncation.
-            if new_step_api:
-                raise ValueError("new_step_api is enabled, but the environment seems return just 'done' instead of 'terminated' and 'truncated'. Use different environment or set new_step_api to False.")
-            next_obs, reward, done, info = step_result
-            terminated = done
-            truncated = False
+        if isinstance(env, PerStateRejectionSampling):
+            action, next_obs, reward, terminated, truncated, info = env.step_dist(action_dist)
+            if next_obs is None or action is None:
+                break
         else:
-            # New gym API. Recommended for collecting data for offline simulation.
-            next_obs, reward, terminated, truncated, info = step_result
+            action = sample_dist(action_dist)
+            agent.commit_action(action)
+            step_result = env.step(action)
+
+            if len(step_result) == 4:
+                # Old gym API. Discouraged, since it may incorrectly mark regular states 
+                # terminal states, due to episode truncation.
+                if new_step_api:
+                    raise ValueError("new_step_api is enabled, but the environment seems return just 'done' instead of 'terminated' and 'truncated'. Use different environment or set new_step_api to False.")
+                next_obs, reward, done, info = step_result
+                terminated = done
+                truncated = False
+            else:
+                # New gym API. Recommended for collecting data for offline simulation.
+                next_obs, reward, terminated, truncated, info = step_result
 
         numpy_infos = {}
 
@@ -111,6 +118,9 @@ def record_dataset_in_memory(
             next_observations=next_obs,
             terminals=terminated,
             **numpy_infos)
+
+        if t >= env_time_limit:
+            truncated = True
 
         if terminated or truncated:
             agent.end_episode(reward, truncated=truncated)
