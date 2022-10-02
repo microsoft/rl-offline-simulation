@@ -40,9 +40,9 @@ script_run_config = ScriptRunConfig(
         "--steps", "1000",
         "--num_iter", "50000",
         "--exp_name", "CartPole-PSRS-ppo",
-        "--dataset_name", "pd_controller_theta-omega_100x50k_eps_0.2",
+        "--dataset_name", "ppo_100x50k",
         "--prefix", "cartpole",
-        "--seed", "5"
+        "--seed", "4"
     ],
     compute_target=compute_manager.create_compute_target(ws, "ds12v2"),
     environment=environment_manager.create_env(

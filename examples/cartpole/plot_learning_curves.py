@@ -23,21 +23,24 @@ def main(args):
     df_pd_control_0 = pd.read_csv(os.path.join(args.input_dir, 'progress-CartPole-PSRS-ppo-pd-controller-0.1.txt'), sep='\t')
     df_pd_control_1 = pd.read_csv(os.path.join(args.input_dir, 'progress-CartPole-PSRS-ppo-pd-controller-0.2.txt'), sep='\t')
     df_pd_control_2 = pd.read_csv(os.path.join(args.input_dir, 'progress-CartPole-PSRS-ppo-pd-controller-0.3.txt'), sep='\t')
+    df_pd_control_3 = pd.read_csv(os.path.join(args.input_dir, 'progress-CartPole-PSRS-ppo-pd-controller-0.4.txt'), sep='\t')
+    df_pd_control_4 = pd.read_csv(os.path.join(args.input_dir, 'progress-CartPole-PSRS-ppo-pd-controller-0.5.txt'), sep='\t')
 
     df_ppo_box = pd.read_csv(os.path.join(args.input_dir, 'progress-CartPole-v1_ppo_box_encoder-0.1.txt'), sep='\t')
 
-
     dfs = [
-        # (df_pd_real, 'k', 'Real'),
+        (df_pd_real, 'k', 'Real'),
         # (df_ppo, 'tab:red', 'PPO'),
         # (df_pd_control_0, 'tab:green', 'PD Controller-all'),
         # (df_pd_control_1, 'tab:green', 'PD Controller-theta-omega0'),
         # (df_pd_control_2, 'tab:blue', 'PD Controller-theta-omega1'),
+        (df_pd_control_3, 'tab:blue', 'PD Controller-theta-omega-20x50k-1'),
+        (df_pd_control_4, 'tab:red', 'PD Controller-theta-omega-20x50k-4'),
         # (df_pd_theta_omega_real_0, 'tab:orange', 'PD Controller-theta-omega Real eps 0.2'),
         # (df_pd_theta_omega_real_2, 'tab:green', 'PD Controller-theta-omega Real eps 0.1'),
-        (df_pd_theta_omega_real_1, 'tab:blue', 'PD Controller-theta-omega Real eps 0.05'),
-        (df_pd_omega_real_0, 'tab:green', 'PD Controller-omega Real eps 0.05'),
-        (df_pd_theta_real_0, 'tab:orange', 'PD Controller-theta Real eps 0.05'),
+        # (df_pd_theta_omega_real_1, 'tab:blue', 'PD Controller-theta-omega Real eps 0.05'),
+        # (df_pd_omega_real_0, 'tab:green', 'PD Controller-omega Real eps 0.05'),
+        # (df_pd_theta_real_0, 'tab:orange', 'PD Controller-theta Real eps 0.05'),
 
         # (df_ppo_box, 'tab:red', 'PPO-Box')
 
@@ -49,7 +52,7 @@ def main(args):
 
     plt.xlabel('Epoch')
     plt.ylabel(metric_name)
-    plt.legend(loc='upper right')
+    plt.legend(loc='lower right')
     plt.savefig(os.path.join(args.output_dir, f'comparison_{metric_name}.png'))
 
     # plot_metric_from_spinup_progress(os.path.join(args.input_dir, 'progress-CartPole-PSRS-ppo-0.3.txt'), 'EpRet', args.output_dir)

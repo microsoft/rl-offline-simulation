@@ -32,7 +32,7 @@ def concatenate_files(input_dir, output_dir, prefix):
 
 
 def main(args):
-    logger_kwargs = setup_logger_kwargs(args.exp_name, args.seed, data_dir=args.output_dir)
+    logger_kwargs = setup_logger_kwargs(args.exp_name, args.seed, data_dir='./logs')
     logger = EpochLogger(**logger_kwargs)
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -62,21 +62,16 @@ def main(args):
     print(f"Finished PSRS intialization. It took: {time.time() - start_time} seconds")
 
     dataset = record_dataset_in_memory(
-        env,
+        psrs,
         agent,
         num_samples=args.num_iter,
         seed=args.seed,
-        new_step_api=True)
+        new_step_api=True
+    )
 
     dataset.save_hdf5(output_path)
 
     print('Simulation took: {0} minutes.'.format(str((time.time() - start_time) / 60)))
-
-    # plot_metric_from_spinup_progress(
-    #     progress_file_path=os.path.join(logger_kwargs['output_dir'], 'progress.txt'),
-    #     metric_name='EpRet',
-    #     output_dir=logger_kwargs['output_dir']
-    # )
 
 
 if __name__ == "__main__":
