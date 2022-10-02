@@ -23,7 +23,7 @@ datastore = ws.get_default_datastore()
 # datastore = Datastore.get(ws, 'offsim4rl')
 input_ref = Dataset.File.from_files(datastore.path("offsim4rl/cartpole-v1/**")).as_mount()
 output_ref = OutputFileDatasetConfig(
-    destination=(datastore, "offsim4rl/cartpole-v1/pd_controller")
+    destination=(datastore, "offsim4rl/cartpole-v1/pd_controller_omega_100x50k_eps_0.05")
 )
 
 installation_cmds = "pip install -e git+https://github.com/sebastko/spinningup-simple-install.git#egg=spinup && pip install -e . && "
@@ -36,9 +36,10 @@ script_run_config = ScriptRunConfig(
         "--output_dir", output_ref,
         "--env", "CartPole-v1",
         "--cpu", "0",
-        "--seed", "2",
-        "--num_iter", "20000",
-        "--mode", "theta-omega",
+        "--seed", "0",
+        "--num_iter", "50000",
+        "--mode", "omega",
+        "--eps", "0.05",
     ],
     compute_target=compute_manager.create_compute_target(ws, "ds3v2"),
     environment=environment_manager.create_env(

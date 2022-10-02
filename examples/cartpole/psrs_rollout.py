@@ -22,7 +22,7 @@ def concatenate_files(input_dir, output_dir, prefix):
         if file.startswith(prefix):
             files_to_concatenate.append(os.path.join(input_dir, file))
 
-    dataset_name = f'{prefix}_concat_{time.time()}.hdf5'
+    dataset_name = f'concat_{time.time()}.hdf5'
     HDF5Dataset.concatenate(
         files_to_concatenate,
         os.path.join(output_dir, dataset_name)

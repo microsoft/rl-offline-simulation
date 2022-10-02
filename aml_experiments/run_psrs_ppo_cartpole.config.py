@@ -38,13 +38,13 @@ script_run_config = ScriptRunConfig(
         "--env", "CartPole-v1",
         "--cpu", "0",
         "--steps", "1000",
-        "--num_iter", "20000",
+        "--num_iter", "50000",
         "--exp_name", "CartPole-PSRS-ppo",
-        "--dataset_name", "ppo_small",
+        "--dataset_name", "pd_controller_theta-omega_100x50k_eps_0.2",
         "--prefix", "cartpole",
-        "--seed", "9"
+        "--seed", "5"
     ],
-    compute_target=compute_manager.create_compute_target(ws, "gpu-nc24"),
+    compute_target=compute_manager.create_compute_target(ws, "ds12v2"),
     environment=environment_manager.create_env(
         ws,
         "offsim4rl-env",

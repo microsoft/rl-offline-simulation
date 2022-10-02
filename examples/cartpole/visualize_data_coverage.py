@@ -13,12 +13,18 @@ from offsim4rl.utils.vis_utils import CartPoleVisUtils
 
 
 def main(args):
-    behavior_policy_dataset = 'cartpole_ppo_seed_197_steps_50000.hdf5'
-    target_policy_dataset = 'cartpole_psrs_seed_9.hdf5'
-
     dataset_names = [
-        behavior_policy_dataset,
-        target_policy_dataset
+        # 'cartpole_ppo_seed_197_steps_50000.hdf5',
+        # 'cartpole_psrs_seed_9.hdf5',
+        # 'cartpole_pd_controller_eps_0.2_theta-omega_seed_0_steps_20000.hdf5',
+        # 'cartpole_pd_controller_eps_0.2_theta_seed_0_steps_20000.hdf5',
+        # 'cartpole_pd_controller_eps_0.2_omega_seed_0_steps_20000.hdf5',
+        # 'cartpole_pd_controller_eps_0.05_theta-omega_seed_199_steps_50000.hdf5',
+        # 'cartpole_pd_controller_omega_seed_0_steps_20000.hdf5',
+        # 'cartpole_pd_controller_theta_seed_0_steps_20000.hdf5',
+        # 'cartpole_pd_controller_theta-omega_seed_0_steps_20000.hdf5'
+        'cartpole_psrs_seed_2_theta-omega.hdf5',
+        'cartpole_psrs_seed_3_theta-omega.hdf5',
     ]
 
     for dataset_name in dataset_names:
@@ -37,7 +43,7 @@ def main(args):
         # OBS HIST
         bins = np.arange(-5, 180, 5)  # fixed bin size
         plt.xlim([min(obs_encodings) - 5, max(obs_encodings) + 5])
-        plt.hist(obs_encodings, bins=bins, alpha=0.5)
+        plt.hist(obs_encodings, bins=bins, alpha=0.5, label=dataset_name)
 
         # OBS-ACT HIST
         # plt.clf()
@@ -53,6 +59,7 @@ def main(args):
     plt.title('Cartpole data coverage in box encodings')
     plt.xlabel('box')
     plt.ylabel('count')
+    plt.legend()
     plt.savefig(os.path.join(args.output_dir, 'data_coverage.png'))
 
 if __name__ == "__main__":
