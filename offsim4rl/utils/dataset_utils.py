@@ -70,6 +70,7 @@ def record_dataset_in_memory(
             action, next_obs, reward, terminated, truncated, info = env.step_dist(action_dist)
             if next_obs is None or action is None:
                 break
+            agent.commit_action(action)
         else:
             action = sample_dist(action_dist)
             agent.commit_action(action)
