@@ -108,6 +108,9 @@ class OfflineDataset:
             raise ValueError(f'Shapes in observations and next_observations do not match')
 
         for k in experience:
+            if k not in required_keys:
+                continue
+
             if len(experience[k]) != experience['observations'].shape[0]:
                 raise ValueError(f'Length of {k} ({len(experience[k])}) does not match length of observations ({experience["observations"].shape[0]})')
         

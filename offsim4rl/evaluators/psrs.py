@@ -1,3 +1,4 @@
+import time
 import numpy as np
 import copy
 import itertools
@@ -9,7 +10,9 @@ class PSRS(object):
         self.nS = nS
         self.nA = nA
         self._reject_func = reject_func if reject_func is not None else self._default_reject
+        start_time = time.time()
         self._calculate_latent_state()  # self.buffer contains (z, s, a, r, z', s', done, p, info)
+        print(f'Time to produce latent state dataset: {time.time() - start_time}')
         self.reset_sampler()
         self.reset()
 

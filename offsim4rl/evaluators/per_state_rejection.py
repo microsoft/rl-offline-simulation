@@ -1,3 +1,5 @@
+import time
+
 import gym
 from offsim4rl.core import RevealedRandomnessEnv
 from offsim4rl.data import OfflineDataset
@@ -25,7 +27,7 @@ class PerStateRejectionSampling(RevealedRandomnessEnv):
             raise ValueError('PerStateRejectionSampling currently only supports discrete action spaces')
 
         self._dataset = dataset
-
+        start_time = time.time()
         if encoder is not None:
             zs = encoder.encode(dataset.experience['observations'])
             next_zs = encoder.encode(dataset.experience['next_observations'])
@@ -34,6 +36,7 @@ class PerStateRejectionSampling(RevealedRandomnessEnv):
             zs = dataset.experience['observations']
             next_zs = dataset.experience['next_observations']
 
+        print(f'Time to encode observations: {time.time() - start_time}')
         # PSRS expects action probabilities in the one but last element of the tuple.
         legacy_tuples = (
             (
@@ -48,6 +51,7 @@ class PerStateRejectionSampling(RevealedRandomnessEnv):
             )
             for i, row in enumerate(dataset.iterate_row_tuples())
         )
+        print(f'Time to create legacy tuples: {time.time() - start_time}')
 
         kwargs = {
             'buffer': legacy_tuples,
@@ -57,7 +61,7 @@ class PerStateRejectionSampling(RevealedRandomnessEnv):
 
         # Optional arguments - pass only if not None. Otherwise, use default arg values.
         if num_states is not None:
-            kwargs['nS']=num_states
+            kwargs['nS'] = num_states
 
         self.new_step_api = new_step_api
 

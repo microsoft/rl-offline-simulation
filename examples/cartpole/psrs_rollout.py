@@ -36,7 +36,7 @@ def main(args):
     logger = EpochLogger(**logger_kwargs)
 
     os.makedirs(args.output_dir, exist_ok=True)
-    output_path = os.path.join(args.output_dir, f'cartpole_psrs_seed_{args.seed}.hdf5')
+    output_path = os.path.join(args.output_dir, f'{args.dataset_name}_seed_{args.seed}.hdf5')
 
     env = gym.make(args.env, new_step_api=True)
     agent = PPOAgentRevealed(

@@ -14,7 +14,7 @@ from offsim4rl.utils.vis_utils import CartPoleVisUtils
 
 def main(args):
     dataset_names = [
-        # 'cartpole_ppo_seed_197_steps_50000.hdf5',
+        'cartpole_ppo_seed_197_steps_50000.hdf5',
         # 'cartpole_psrs_seed_9.hdf5',
         # 'cartpole_pd_controller_eps_0.2_theta-omega_seed_0_steps_20000.hdf5',
         # 'cartpole_pd_controller_eps_0.2_theta_seed_0_steps_20000.hdf5',
@@ -23,8 +23,11 @@ def main(args):
         # 'cartpole_pd_controller_omega_seed_0_steps_20000.hdf5',
         # 'cartpole_pd_controller_theta_seed_0_steps_20000.hdf5',
         # 'cartpole_pd_controller_theta-omega_seed_0_steps_20000.hdf5'
-        'cartpole_psrs_seed_2_theta-omega.hdf5',
-        'cartpole_psrs_seed_3_theta-omega.hdf5',
+        # 'pd_controller_theta-omega_20x50k_eps_0.2_seed_9.hdf5',
+        # 'cartpole_psrs_ppo_seed_1.hdf5',
+        # 'ppo_50x20k_seed_5.hdf5',
+        # 'ppo_20x50k_seed_24.hdf5',
+        'ppo_100x50k_seed_13.hdf5'
     ]
 
     for dataset_name in dataset_names:
