@@ -12,11 +12,11 @@ def plot_aggregated_performance_curves(metric_name, input_dir, output_dir):
     dfs_real = [pd.read_csv(os.path.join(input_dir, 'real_env', f'CartPole-v1_ppo-revealed_s{seed}', 'progress.txt'), sep='\t') for seed in [7, 8, 9, 51]]
     df_real = pd.concat(dfs_real).groupby('Epoch').mean().reset_index()
 
-    # dfs_psrs_ppo = [pd.read_csv(os.path.join(input_dir, 'CartPole-PSRS-ppo_20x50k', f'CartPole-PSRS-ppo_s{seed}', 'progress.txt'), sep='\t') for seed in [20, 21, 22, 23, 24]]
-    # dfs_psrs_ppo = [pd.read_csv(os.path.join(input_dir, 'CartPole-PSRS-ppo_50x20k', f'CartPole-PSRS-ppo_s{seed}', 'progress.txt'), sep='\t') for seed in [5, 8, 9]]
-    # dfs_psrs_ppo = [pd.read_csv(os.path.join(input_dir, 'CartPole-PSRS-ppo_100x20k', f'CartPole-PSRS-ppo_s{seed}', 'progress.txt'), sep='\t') for seed in [0,1,2,3,4,11,12,13]]
+    dfs_psrs_ppo = [pd.read_csv(os.path.join(input_dir, 'CartPole-PSRS-ppo_20x50k', f'CartPole-PSRS-ppo_s{seed}', 'progress.txt'), sep='\t') for seed in [20, 21, 22, 23, 24]]
+    dfs_psrs_ppo = [pd.read_csv(os.path.join(input_dir, 'CartPole-PSRS-ppo_50x20k', f'CartPole-PSRS-ppo_s{seed}', 'progress.txt'), sep='\t') for seed in [5, 8, 9]]
+    dfs_psrs_ppo = [pd.read_csv(os.path.join(input_dir, 'CartPole-PSRS-ppo_100x20k', f'CartPole-PSRS-ppo_s{seed}', 'progress.txt'), sep='\t') for seed in [0,1,2,3,4,11,12,13,14]]
 
-    # df_psrs_ppo = pd.concat(dfs_psrs_ppo).groupby('Epoch').mean().reset_index()
+    df_psrs_ppo = pd.concat(dfs_psrs_ppo).groupby('Epoch').mean().reset_index()
 
     dfs_psrs_pd = [pd.read_csv(os.path.join(input_dir, 'CartPole-PSRS-ppo-pd-controller', f'CartPole-PSRS-ppo-pd-controller_s{seed}', 'progress.txt'), sep='\t') for seed in [5, 6, 7, 8, 9, 10]]
     df_psrs_pd = pd.concat(dfs_psrs_pd).groupby('Epoch').mean().reset_index()
@@ -26,17 +26,17 @@ def plot_aggregated_performance_curves(metric_name, input_dir, output_dir):
     plt.plot(df_real[metric_name], color='k', ls='--', label='Real')
     plt.fill_between(df_real['Epoch'], df_real[metric_name.replace('Average', 'Min')], df_real[metric_name.replace('Average', 'Max')], alpha=0.2, color='k')
 
-    # plt.plot(df_psrs_ppo[metric_name], lw=1.5, alpha=0.9, label='PSRS-ppo', c='tab:orange')
+    plt.plot(df_psrs_ppo[metric_name], lw=1.5, alpha=0.9, label='PSRS-ppo', c='tab:orange')
     # plt.fill_between(df_psrs_ppo['Epoch'], df_psrs_ppo[metric_name.replace('Average', 'Min')], df_psrs_ppo[metric_name.replace('Average', 'Max')], alpha=0.2, color='tab:orange')
-    # plt.scatter(len(df_psrs_ppo[metric_name])-1, df_psrs_ppo[metric_name].iloc[-1], marker='o', color=plt.gca().lines[-1].get_color(), alpha=1, zorder=11)
+    plt.scatter(len(df_psrs_ppo[metric_name])-1, df_psrs_ppo[metric_name].iloc[-1], marker='o', color=plt.gca().lines[-1].get_color(), alpha=1, zorder=11)
 
     plt.plot(df_psrs_pd[metric_name], lw=1.5, alpha=0.9, label='PSRS-pd-controller', c='tab:green')
-    plt.fill_between(df_psrs_pd['Epoch'], df_psrs_pd[metric_name.replace('Average', 'Min')], df_psrs_pd[metric_name.replace('Average', 'Max')], alpha=0.2, color='tab:green')
+    # plt.fill_between(df_psrs_pd['Epoch'], df_psrs_pd[metric_name.replace('Average', 'Min')], df_psrs_pd[metric_name.replace('Average', 'Max')], alpha=0.2, color='tab:green')
     plt.scatter(len(df_psrs_pd[metric_name])-1, df_psrs_pd[metric_name].iloc[-1], marker='o', color=plt.gca().lines[-1].get_color(), alpha=1, zorder=11)
 
     plt.xlabel('Epoch')
     plt.ylabel('Learning Performance')
-    plt.xlim(0,50)
+    plt.xlim(0, 50)
     plt.legend(loc='lower right')
     plt.savefig(os.path.join(output_dir, 'cartpole_learning_performance.png'), bbox_inches='tight')
     plt.show()
@@ -44,7 +44,7 @@ def plot_aggregated_performance_curves(metric_name, input_dir, output_dir):
 def plot_learning_curves(metric_name, input_dir, output_dir):
     # LEARNING CURVES CARTPOLE ##
     df_pd_real = pd.read_csv(os.path.join(input_dir, 'progress-CartPole-v1_ppo-revealed-0.1.txt'), sep='\t')
-    df_ppo = pd.read_csv(os.path.join(input_dir, 'progress-CartPole-PSRS-ppo-0.4.txt'), sep='\t')
+    df_ppo = pd.read_csv(os.path.join(input_dir, 'progress-CartPole-PSRS-ppo-0.5.txt'), sep='\t')
 
     df_pd_theta_omega_real_0 = pd.read_csv(os.path.join(input_dir, 'progress-CartPole-v1_pd_controller_theta-omega_eps_0.2.txt'), sep='\t')
     df_pd_theta_omega_real_1 = pd.read_csv(os.path.join(input_dir, 'progress-CartPole-v1_pd_controller_theta-omega_eps_0.05.txt'), sep='\t')
@@ -82,8 +82,8 @@ def plot_learning_curves(metric_name, input_dir, output_dir):
 
 
 def main(args):
-    plot_aggregated_performance_curves('AverageEpRet', args.input_dir, args.output_dir)
-    # plot_learning_curves('EpRet', args.input_dir, args.output_dir)
+    # plot_aggregated_performance_curves('AverageEpRet', args.input_dir, args.output_dir)
+    plot_learning_curves('EpRet', args.input_dir, args.output_dir)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

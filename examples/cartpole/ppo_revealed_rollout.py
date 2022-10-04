@@ -53,6 +53,7 @@ if __name__ == "__main__":
     parser.add_argument('--num_iter', type=int, default=50000)
     parser.add_argument('--exp_name', type=str, default='ppo')
     parser.add_argument('--output_dir', type=str, default='./outputs')
+    parser.add_argument('--input_dir', type=str, default='./inputs')
 
     args = parser.parse_args()
     main(args)
