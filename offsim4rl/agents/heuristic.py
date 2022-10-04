@@ -4,9 +4,8 @@ from offsim4rl.agents.agent import Agent
 from offsim4rl.data import ProbDistribution
 
 class CartPolePDController(Agent):
-    '''
-        Implementation based on https://towardsdatascience.com/how-to-beat-the-cartpole-game-in-5-lines-5ab4e738c93f 
-    '''
+    THETA_THRESHOLD = 2 * np.pi / 180
+
     def __init__(self, action_space: gym.Space, mode='theta-omega', eps=0):
         if not isinstance(action_space, gym.spaces.Discrete):
             raise ValueError("action_space must be gym.spaces.Discrete")
@@ -37,30 +36,19 @@ class CartPolePDController(Agent):
     def end_episode(self, reward, truncated=False):
         pass
 
-    def _theta_policy(self, obs):
-        theta = obs[2]
-        return 0 if theta < 0 else 1
-
-    def _omega_policy(self, obs):
-        w = obs[3]
-        return 0 if w < 0 else 1
-
-    def _theta_omega_policy(self, obs):
-        theta, w = obs[2:4]
-        if abs(theta) < 0.03:
-            return 0 if w < 0 else 1
-        else:
-            return 0 if theta < 0 else 1
-
     def _get_act_distribution(self, obs):
         pi = np.array(self._prob_dist)
         act = 0
+        theta, w = obs[2:4]
         if self.mode == 'theta':
-            act = self._theta_policy(obs)
+            act = 0 if theta < 0 else 1
         elif self.mode == 'omega':
-            act = self._omega_policy(obs)
+            act = 0 if w < 0 else 1
         elif self.mode == 'theta-omega':
-            act = self._theta_omega_policy(obs)
+            if abs(theta) < CartPolePDController.THETA_THRESHOLD:
+                act = 0 if w < 0 else 1
+            else:
+                act = 0 if theta < 0 else 1
 
         pi[act] = 1 - self.eps / 2
         pi[1 - act] = self.eps / 2
