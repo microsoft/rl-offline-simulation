@@ -33,7 +33,6 @@ def load_h5_dataset(h5path):
                 dataset[k] = dataset_file[k][()]
     return dataset
 
-
 def record_dataset_in_memory(
         env: gym.Env,
         agent: Agent,
@@ -52,13 +51,8 @@ def record_dataset_in_memory(
         for k in buffer:
             buffer[k] = np.array(buffer[k])
 
-    if seed is not None:
-        random.seed(seed)
-        np.random.seed(seed)
-        rng = np.random.default_rng(seed=seed)
-
     episode_id = worker_id
-    obs = env.reset()
+    obs = env.reset(seed=seed)
 
     buffer = defaultdict(lambda: [])
     t = 0
@@ -84,7 +78,7 @@ def record_dataset_in_memory(
             truncated = False
         else:
             # New gym API. Recommended for collecting data for offline simulation.
-            next_obs, reward, terminated, truncated, info = env.step(action)
+            next_obs, reward, terminated, truncated, info = step_result
 
         numpy_infos = {}
 

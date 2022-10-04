@@ -9,15 +9,18 @@ from spinup.utils.run_utils import setup_logger_kwargs
 
 from offsim4rl.agents.ppo import PPOAgentRevealed
 from offsim4rl.utils.dataset_utils import record_dataset_in_memory
+from offsim4rl.utils.prob_utils import sample_dist
+from offsim4rl.utils.vis_utils import CartPoleVisUtils
+
 
 def main(args):
-    logger_kwargs = setup_logger_kwargs(args.exp_name, 0, data_dir=args.output_dir)
+    logger_kwargs = setup_logger_kwargs(args.exp_name, args.seed, data_dir=args.output_dir)
     logger = EpochLogger(**logger_kwargs)
 
     os.makedirs(args.output_dir, exist_ok=True)
-    output_path = os.path.join(args.output_dir, 'cartpole.hdf5')
+    output_path = os.path.join(args.output_dir, f'cartpole_seed_{args.seed}_steps_{args.num_iter}.hdf5')
 
-    env = gym.make(args.env)
+    env = gym.make(args.env, new_step_api=True)
     agent = PPOAgentRevealed(
         env.observation_space,
         env.action_space,
@@ -29,14 +32,15 @@ def main(args):
     )
 
     mpi_fork(args.cpu)  # run parallel code with mpi
-
     dataset = record_dataset_in_memory(
         env,
         agent,
         num_samples=args.num_iter,
+        seed=args.seed,
         new_step_api=True)
 
     dataset.save_hdf5(output_path)
+    # CartPoleVisUtils.replay(dataset, record_clip=True, output_dir=os.path.join(args.output_dir, 'clips'))
 
 
 if __name__ == "__main__":
