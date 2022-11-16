@@ -12,7 +12,7 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 def test_homer_encoder_inference():
     homer_encoder = HOMEREncoder(
         obs_dim=2, action_dim=5,
-        latent_size=25,
+        latent_size=50,
         hidden_size=64,
         model_path=os.path.join(ROOT_DIR, 'models', 'encoders', 'encoder_model.pt'),
     )
