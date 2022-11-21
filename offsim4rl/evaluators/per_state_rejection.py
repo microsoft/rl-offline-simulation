@@ -15,7 +15,7 @@ class PerStateRejectionSampling(RevealedRandomnessEnv):
 
         if not isinstance(dataset.observation_space, gym.spaces.Discrete) and num_states is None and encoder is None:
             raise ValueError('PerStateRejectionSampling only supports discrete observation spaces')
-        
+
         if (num_states is None or encoder is None) and (num_states != encoder):
             raise ValueError('num_states and encoder either both need to be None, or both need to be specified')
 
@@ -33,7 +33,7 @@ class PerStateRejectionSampling(RevealedRandomnessEnv):
             # Assume discrete observations that correspond to states
             zs = dataset.experience['observations']
             next_zs = dataset.experience['next_observations']
-        
+
         # PSRS expects action probabilities in the one but last element of the tuple.
         legacy_tuples = (
             (
@@ -58,22 +58,22 @@ class PerStateRejectionSampling(RevealedRandomnessEnv):
         # Optional arguments - pass only if not None. Otherwise, use default arg values.
         if num_states is not None:
             kwargs['nS']=num_states
-        
+
         self.new_step_api = new_step_api
 
         self._impl = PSRS(**kwargs)
-    
+
     @property
     def observation_space(self):
         return self._dataset.observation_space
-    
+
     @property
     def action_space(self):
         return self._dataset.action_space
-    
+
     def reset_sampler(self, seed=None):
         return self._impl.reset_sampler(seed=seed)
-    
+
     def reset(self, seed=None):
         return self._impl.reset(seed=seed)
 
@@ -81,7 +81,7 @@ class PerStateRejectionSampling(RevealedRandomnessEnv):
         raise NotImplementedError(
             f'{self.__class__.__name__} does not support step(). To implement Per-State Rejection ' +
             'Sampling efficiently, your agent needs to reveal its action distribution via the step_dist() method instead.')
-    
+
     def step_dist(self, action_dist):
         if isinstance(action_dist, Distribution):
             action_dist = action_dist.probs

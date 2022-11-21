@@ -22,5 +22,5 @@ class DiscreteRandom(Agent):
     def step(self, reward, observation):
         return np.array(self._prob_dist)
 
-    def end_episode(self, reward):
+    def end_episode(self, reward, truncated=False):
         pass
