@@ -7,9 +7,9 @@ As part of this research project, we have started creation of the ``offsim4rl`` 
 
 To reproduce the experiments from the paper, please use the [neurips_workshop_2022](https://github.com/microsoft/rl-offline-simulation/tree/neurips_workshop_2022) branch, which includes experimental notebooks. The notebooks will be removed from the main branch, such that it is easier to continue developing the offsim4rl library without breaking the workshop experiments. However, if you intend to use the ``offsim4rl`` library (e.g., to run offline learner simulation using your own dataset), you're better off using the [main](https://github.com/microsoft/rl-offline-simulation/tree/main) branch.
 
-## Getting Started
+## Getting started (experiment repro)
 
-To install the ``offsim4rl`` library, run the following steps.
+The instruction below show how to set up the environment to reproduce experiments from the NeurIPS 2022 Offline RL workshop paper [Towards Data-Driven Offline Simulations for Online Reinforcement Learning](https://arxiv.org/abs/2211.07614) - they are **different** from the installation instructions in the [main](https://github.com/microsoft/rl-offline-simulation/tree/main) branch.
 
 Note: currently, we support Linux Ubuntu (can be via Windows Subsystem for Linux). Other platforms should work, but haven't been tested.
 
@@ -35,6 +35,27 @@ cd rl-offline-simulation
 pip install -r requirements.txt
 pip install -e .
 ```
+
+
+
+```console
+conda create -n offsim4rl pip=21.2.4 python=3.7
+conda activate offsim4rl
+conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch conda-forge defaults
+pip install -e .
+```
+
+### Additional setup instructions
+To use the [spinup agents](https://github.com/microsoft/rl-offline-simulation/tree/main/offsim4rl/agents/spinup), please refer to the installation instructions of [Spinning UP](https://spinningup.openai.com/en/latest/user/installation.html#installing-spinning-up).
+
+```console
+git clone https://github.com/shengpu1126/spinningup/
+cd spinningup
+git checkout shengpu1126-patch-1
+pip install -e .
+```
+
+
 
 4. [Optional] Run unit tests.
 
