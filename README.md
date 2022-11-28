@@ -1,10 +1,17 @@
-# Project OffSim4RL
+# Offline Learner Simulation
+**Offline Simulations for Online Reinforcement Learning**
 
-This repo intends to track several tools and experiments for the Offline Simulation for Reinforcement Learning paper.
+This repository contains code used in the NeurIPS 2022 Offline RL workshop paper [Towards Data-Driven Offline Simulations for Online Reinforcement Learning](https://arxiv.org/abs/2211.07614) by Shengpu Tang, Felipe Vieira Frujeri, Dipendra Misra, Alex Lamb, John Langford, Paul Mineiro, Sebastian Kochman.
+
+As part of this research project, we have started creation of the ``offsim4rl`` library, containing algorithms for Offline Learner Simulation (OLS), like Per-State Rejection Sampling (originally proposed by [Mandel et al, 2016](https://grail.cs.washington.edu/projects/nonstationaryeval/)), as well as tools for evaluating different OLS methods. We share it in the early stage of development and are looking forward to seeing how the RL research community takes it further, either via contributions or project forks.
+
+To reproduce the experiments from the paper, please use the [neurips_workshop_2022](https://github.com/microsoft/rl-offline-simulation/tree/neurips_workshop_2022) branch, which includes experimental notebooks. The notebooks will be removed from the main branch, such that it is easier to continue developing the offsim4rl library without breaking the workshop experiments. However, if you intend to use the ``offsim4rl`` library (e.g., to run offline learner simulation using your own dataset), you're better off using the [main](https://github.com/microsoft/rl-offline-simulation/tree/main) branch.
 
 ## Getting Started
 
-Currently, we support Linux Ubuntu (can be via Windows Subsystem for Linux). Other platforms haven't been tested.
+To install the ``offsim4rl`` library, run the following steps.
+
+Note: currently, we support Linux Ubuntu (can be via Windows Subsystem for Linux). Other platforms should work, but haven't been tested.
 
 1. Make sure the native dependencies are installed:
 
@@ -39,6 +46,20 @@ Note: many dependencies are listed in both "requirements.txt" and in "setup.py".
  * The "requirements.txt" file contains exact versions of the dependencies, some of which are required for our test pipeline to pass. If you'd like to make sure everything is running correctly, would like to reproduce our results, or would like to contribute to the project, we recommend installing the dependecies via "pip install -r requirements.txt", before installing the library.
  * The "setup.py" offers more flexibility in terms of versioning dependencies. If you intend to use offsim4rl as a library in your own project, and you'd like to use different versions of some dependencies than the ones we specified in "requirements.txt", you may skip "pip install -r requirements.txt" and run "pip install -e ." directly.
 
+## Citation
+
+If you found this repository useful in your research, please cite our work using the following BibTeX:
+
+```
+@inproceedings{
+    tang2022towards,
+    title={Towards Data-Driven Offline Simulations for Online Reinforcement Learning},
+    author={Tang, Shengpu and Frujeri, Felipe Vieira and Misra, Dipendra and Lamb, Alex and Langford, John and Mineiro, Paul and Kochman, Sebastian},
+    booktitle={3rd Offline RL Workshop: Offline RL as a ''Launchpad''},
+    year={2022},
+    url={https://arxiv.org/abs/2211.07614}
+}
+```
 
 ## Contribute
 
